@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API\OsuApi.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="Json\Get_Match_Json.cs" />
     <Compile Include="Json\Json.cs" />
     <Compile Include="MessageHandler.cs" />

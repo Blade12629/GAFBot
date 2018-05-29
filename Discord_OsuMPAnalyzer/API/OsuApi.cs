@@ -4,7 +4,7 @@ namespace Discord_OsuMPAnalyzer.API
 {
     public static class OsuApi
     {
-        private static string API_Key = Program.OsuApiKey;
+        private static string API_Key { get { return Config.OsuApiKey; } }
         private static string API_URL = "https://osu.ppy.sh/api/";
 
         public static Object GetMatch(int matchId)

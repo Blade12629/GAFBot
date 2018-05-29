@@ -10,41 +10,50 @@ namespace Discord_OsuMPAnalyzer
         public static DiscordClient _DClient;
 
         //DO NOT SHARE
-        private static string _DClientToken = "";
-        public static string OsuApiKey = "";
 
         static void Main(string[] args)
         {
             try
             {
-                if (_DClient == null)
+                bool LoadedConfig = Config.LoadConfig();
+                Console.WriteLine("{0}, {1}, {2}", LoadedConfig, Config.OsuApiKey, Config.DiscordClientSecret);
+
+                if (LoadedConfig)
                 {
-                    DiscordConfiguration dconfig = new DiscordConfiguration()
-                    {
-                        Token = _DClientToken,
-                        TokenType = TokenType.Bot
-                    };
+                    //if (_DClient == null)
+                    //{
+                    //    DiscordConfiguration dconfig = new DiscordConfiguration()
+                    //    {
+                    //        Token = Config.DiscordClientSecret,
+                    //        TokenType = TokenType.Bot
+                    //    };
 
-                    _DClient = new DiscordClient(dconfig);
+                    //    _DClient = new DiscordClient(dconfig);
 
-                    _DClient.SetWebSocketClient<WebSocket4NetClient>();
+                    //    _DClient.SetWebSocketClient<WebSocket4NetClient>();
+                    //}
+                    //_DClient.MessageCreated += async e =>
+                    //{
+                    //    if (e.Author = _DClient)
+                    //}
+
                 }
-                
-                //Task t = Task.Run( () => Json.Controller.TestCase());
-                //t.Wait();
+                else
+                {
+                    Console.WriteLine("Failed to load the config!");
+                }
 
+                Task.Delay(-1);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+                int i = 0;
+                while (i == 0)
+                {
+                    Console.ReadLine();
+                }
             }
-
-            Task.Delay(-1);
-            
-            //_DClient.MessageCreated += async e =>
-            //{
-            //    if (e.Author = _DClient)
-            //}
         }
     }
 }
