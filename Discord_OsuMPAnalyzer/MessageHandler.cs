@@ -19,8 +19,7 @@ namespace Discord_OsuMPAnalyzer
             if (Message.StartsWith(MatchString))
             {
                 string sub = Message.Substring(MatchString.Length - 1);
-                
-
+                //ToDo
             }
 
         }
