@@ -22,7 +22,25 @@ namespace Discord_OsuMPAnalyzer
             if (CommandString.StartsWith("!"))
             {
                 string sub = input.Message.Content.Substring(CommandString.Length);
-                
+
+                if (CommandString.StartsWith("!roll"))
+                {
+                    int number = 0;
+                    if (int.TryParse(sub, out number))
+                    {
+                        Task.Run(async () => { await SendMessage(input.Channel, string.Format("You rolled {0}!", new Random().Next(0, number).ToString())); });
+                        return;
+                    }
+                    string[] sub2 = sub.Split(' ');
+                    int number2 = 0;
+                    if (int.TryParse(sub2[0], out number) && int.TryParse(sub2[1], out number2))
+                    {
+                        Task.Run(async () => { await SendMessage(input.Channel, string.Format("You rolled {0}", new Random().Next(number, number2)); });
+                        return;
+                    }
+                    Task.Run(async () => { await SendMessage(input.Channel, string.Format("unkown command, try !roll number or !roll numberMin numberMax")); });
+                    return;
+                }
                 if (CommandString.StartsWith("!analyze"))
                 {
                     if (CanAccessChannel(input.Channel.Id))
