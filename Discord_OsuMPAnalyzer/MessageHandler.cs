@@ -15,7 +15,6 @@ namespace Discord_OsuMPAnalyzer
         public void NewMessage(MessageCreateEventArgs input)
         {
             if (input.Message.Author == Program._DClient.CurrentUser || input.Message == null) return;
-            if (!input.Message.Author.Username.Contains("??????")) return;
             
             string CommandString = input.Message.Content.Split(' ')[0];
 
