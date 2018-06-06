@@ -12,4 +12,4 @@ Made for GottaAimFast
 
 
 
-Current State: Compile Status: Working, Not ready for use
+Status: ready to use
