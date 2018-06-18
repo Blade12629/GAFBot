@@ -73,7 +73,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     //Incase there aren't 4 players
                     while (rankingMax > AvgUserAcc.Count - 1 && rankingMax != 1)
                         rankingMax--;
-
+                    MPMatch.BestAccuracies = new Dictionary<int, float>();
                     Dictionary<int, float> BestAccs = new Dictionary<int, float>();
                     List<int> AccDone = new List<int>();
                     //Get highest average accuracies
@@ -84,14 +84,14 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                         for (int x = 0; x < AvgUserAcc.Count; x++)
                         {
                             
-                            if (BestAccs.Count == 0)
+                            if (MPMatch.BestAccuracies.Count == 0)
                             {
                                 highest = AvgUserAcc.ElementAt(x).Value;
                                 continue;
                             }
 
-                            if (BestAccs.Count > 0)
-                                if (AccDone.Contains(BestAccs.ElementAt(x).Key))
+                            if (MPMatch.BestAccuracies.Count > 0)
+                                if (AccDone.Contains(MPMatch.BestAccuracies.ElementAt(x).Key))
                                     continue;
                             
                             if (highest < AvgUserAcc.ElementAt(x).Value)
@@ -99,8 +99,8 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
                             if (x == AvgUserAcc.Count - 1)
                             {
-                                BestAccs.Add(AvgUserAcc.ElementAt(x).Key, highest);
-                                AccDone.Add(BestAccs.ElementAt(x).Key);
+                                MPMatch.BestAccuracies.Add(AvgUserAcc.ElementAt(x).Key, highest);
+                                AccDone.Add(AvgUserAcc.ElementAt(x).Key);
                             }
                         }
                     }
