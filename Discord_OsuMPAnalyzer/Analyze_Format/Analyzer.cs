@@ -29,28 +29,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
             public Get_Match_Json.JsonFormat MPJson { get; set; }
 
             private Analyzed.MultiMatch m_result;
-
-            private class AvgScores
-            {
-                public ulong[] UserIDs { get; set; }
-                public Score[] Scores { get; set; }
-                public class Score
-                {
-                    public int beatmapid { get; set; }
-                    public int count300 { get; set; }
-                    public int count100 { get; set; }
-                    public int count50 { get; set; }
-                    public int countMiss { get; set; }
-                    public float AvgAcc
-                    {
-                        get
-                        {
-                            return CalculateAccuracy(count300, count100, count50, countMiss);
-                        }
-                    }
-                }
-            }
-
+            
             private Analyzed.MultiMatch CalculateScores(Analyzed.MultiMatch MPMatch)
             {
                 try
