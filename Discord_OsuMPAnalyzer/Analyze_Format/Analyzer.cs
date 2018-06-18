@@ -79,7 +79,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     //Get highest average accuracies
                     for (int i = 0; i < rankingMax; i++)
                     {
-                        float highest = AvgUserAcc.ElementAt(0).Value;
+                        float highest = float.MinValue;
 
                         for (int x = 0; x < AvgUserAcc.Count; x++)
                         {
@@ -101,7 +101,6 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                             {
                                 BestAccs.Add(AvgUserAcc.ElementAt(x).Key, highest);
                                 AccDone.Add(BestAccs.ElementAt(x).Key);
-                                highest = float.MinValue;
                             }
                         }
                     }
