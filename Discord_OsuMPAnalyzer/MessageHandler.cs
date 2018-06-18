@@ -199,7 +199,7 @@ namespace Discord_OsuMPAnalyzer
                             return;
                         }
 
-                        Task.Run(async () => { await SendMessage(e.Channel, string.Format("unkown command, try !roll number or !roll numberMin numberMax")); });
+                        Task.Run(async () => { await SendMessage(e.Channel, string.Format("unkown command, try !roll number or !roll {0} {1}", int.MinValue, int.MaxValue)); });
                     break;
                 #endregion
                 case "!ping":
@@ -226,7 +226,7 @@ namespace Discord_OsuMPAnalyzer
                     if (CanAccessChannel(e.Channel.Id))
                     {
                         bool error = false;
-                        string toSend = "________________________";
+                        string toSend = "```";
                         try
                         {
                             int matchid = 0;
@@ -248,7 +248,7 @@ namespace Discord_OsuMPAnalyzer
                                 toSend += string.Format(Environment.NewLine + s);
                             }
 
-                            toSend += "________________________";
+                            toSend += Environment.NewLine + "```";
 
                             Console.WriteLine(mpMatch.HighestScore.userName);
                         }
