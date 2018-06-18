@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
@@ -74,37 +75,35 @@ namespace Discord_OsuMPAnalyzer
 
 
 
-                            //Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-                            //Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(42788258));
+                        //Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
+                        //Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(42788258));
 
-                            //string toSend = "________________________";
+                        ////string toSend = "________________________";
 
-                            //foreach (string s in mpMatch.AnalyzedData)
-                            //{
-                            //    toSend += string.Format(Environment.NewLine + s);
-                            //}
+                        ////foreach (string s in mpMatch.AnalyzedData)
+                        ////{
+                        ////    toSend += string.Format(Environment.NewLine + s);
+                        ////}
 
-                            //toSend += "________________________";
+                        ////toSend += "________________________";
 
-                            //#pragma warning restore
+                        ////#pragma warning restore
 
-                            //Analyze_Format.Analyzed.MultiMatch ToAnalyze = new Analyze_Format.Analyzed.MultiMatch();
+                        //Analyze_Format.Analyzed.MultiMatch ToAnalyze = mpMatch;
 
-                            //Analyze_Format.Analyzer.MultiplayerMatch MPMatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-                            //MPMatch.MPJson = API.OsuApi.GetMatch(42788258);
-                            //ToAnalyze = MPMatch.Analyze(MPMatch.MPJson);
+                        ////foreach (string s in ToAnalyze.AnalyzedData) Console.WriteLine(s);
 
-                            //foreach (string s in ToAnalyze.AnalyzedData) Console.WriteLine(s);
+                        //Console.WriteLine("Count: {0}", ToAnalyze.BestAccuracies.Count());
 
-                            //using (StreamWriter sw = new StreamWriter("output.txt"))
-                            //{
-                            //    foreach (string s in ToAnalyze.AnalyzedData)
-                            //        sw.WriteLine(s);
-                            //}
+                        //using (StreamWriter sw = new StreamWriter("output.txt"))
+                        //{
+                        //    foreach (string s in ToAnalyze.AnalyzedData)
+                        //        sw.WriteLine(s);
+                        //}
 
 
 
-                            await Task.Delay(-1);
+                        await Task.Delay(-1);
                     }
                     else
                     {

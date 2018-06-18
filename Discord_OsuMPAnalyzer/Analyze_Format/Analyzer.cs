@@ -73,37 +73,13 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     //Incase there aren't 4 players
                     while (rankingMax > AvgUserAcc.Count - 1 && rankingMax != 1)
                         rankingMax--;
-                    MPMatch.BestAccuracies = new Dictionary<int, float>();
-                    Dictionary<int, float> BestAccs = new Dictionary<int, float>();
-                    List<int> AccDone = new List<int>();
-                    //Get highest average accuracies
-                    for (int i = 0; i < rankingMax; i++)
-                    {
-                        float highest = float.MinValue;
 
-                        for (int x = 0; x < AvgUserAcc.Count; x++)
-                        {
-                            
-                            if (MPMatch.BestAccuracies.Count == 0)
-                            {
-                                highest = AvgUserAcc.ElementAt(x).Value;
-                                continue;
-                            }
+                    List<Analyzed.BestAccuracy> BestAccuracies = new List<Analyzed.BestAccuracy>();
 
-                            if (MPMatch.BestAccuracies.Count > 0)
-                                if (AccDone.Contains(MPMatch.BestAccuracies.ElementAt(x).Key))
-                                    continue;
-                            
-                            if (highest < AvgUserAcc.ElementAt(x).Value)
-                                highest = AvgUserAcc.ElementAt(x).Value;
+                    foreach (KeyValuePair<int, float> kvpUser in AvgUserAcc)
+                        BestAccuracies.Add(new Analyzed.BestAccuracy() { Accuracy = kvpUser.Value, userId = kvpUser.Key });
 
-                            if (x == AvgUserAcc.Count - 1)
-                            {
-                                MPMatch.BestAccuracies.Add(AvgUserAcc.ElementAt(x).Key, highest);
-                                AccDone.Add(AvgUserAcc.ElementAt(x).Key);
-                            }
-                        }
-                    }
+                    MPMatch.BestAccuracies = BestAccuracies.ToArray();
                     #endregion
 
                     MPMatch.HighestScore = new Analyzed.Score()
@@ -117,7 +93,6 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                         userScore = HighestScore
                     };
                     MPMatch.HighestScorePoints = MPMatch.HighestScore.userScore.score;
-                    MPMatch.BestAccuracies = BestAccs;
                 }
                 catch (Exception e)
                 {
@@ -205,16 +180,25 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
                     List<string> AnalyzeOutput = new List<string>();
 
-                    for (int i = 0; i < multiMatch.BestAccuracies.Count; i++)
+                    AnalyzeOutput.Add(string.Format("| Game: {0} ({1})", multiMatch.CurrentMatch.name, multiMatch.CurrentMatch.match_id));
+
+                    for (int i = 0; i < multiMatch.BestAccuracies.Count(); i++)
                     {
-                        float Acc = multiMatch.BestAccuracies.ElementAt(i).Value;
+                        float Acc = multiMatch.BestAccuracies.ElementAt(i).Accuracy;
                         string place = "";
 
-                        Get_User_Json.JsonFormat userJson = API.OsuApi.GetUser(multiMatch.BestAccuracies.ElementAt(i).Key);
+                        if (Acc == 0)
+                            continue;
+
+                        Get_User_Json.JsonFormat userJson = API.OsuApi.GetUser(multiMatch.BestAccuracies.ElementAt(i).userId);
                         string name = userJson.username;
 
-                        switch (i)
+                        Console.WriteLine(i + " " + name);
+                        switch (i + 1)
                         {
+                            default:
+                                place = string.Format("{0}th", i + 1);
+                                break;
                             case 1:
                                 place = "first";
                                 break;
@@ -224,17 +208,26 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                             case 3:
                                 place = "third";
                                 break;
-                            default:
-                            case 4:
-                                place = "fourth";
-                                break;
                         }
-
-                        AnalyzeOutput.Add(string.Format("| :{0}_place: Player: {1} Acc: {2}%", place, name, Acc));
+                        string s = string.Format("| :{0}_place: Player: {1} Acc: {2}%", place, name, Acc);
+                        Console.WriteLine(s);
+                        AnalyzeOutput.Add(s);
                     }
 
                     AnalyzeOutput.Add(string.Format("| The highest Score got {0} on the map {1} [{2}] ({3}*) with {4} Points and {5}% Accuracy!", multiMatch.HighestScore.userName, multiMatch.HighestScore.beatmapName, multiMatch.HighestScore.difficulty, multiMatch.HighestScore.starRating, multiMatch.HighestScore.userScore.score, multiMatch.HighestScore.Acc));
-                    AnalyzeOutput.Add(string.Format("| Team Red Wins: {0} {1}| Team Blue Wins: {2}", multiMatch.Team_Red_Wins, Environment.NewLine, multiMatch.Team_Blue_Wins));
+
+                    string TeamWin = "| Team ";
+
+                    if (multiMatch.Team_Blue_Wins > multiMatch.Team_Red_Wins)
+                        TeamWin += "Blue wins";
+                    else if (multiMatch.Team_Red_Wins > multiMatch.Team_Blue_Wins)
+                        TeamWin += "Red wins";
+                    else
+                        TeamWin = "draw";
+
+                    TeamWin += string.Format(" (Red: {0} | Blue: {1})", multiMatch.Team_Red_Wins, multiMatch.Team_Blue_Wins);
+
+                    AnalyzeOutput.Add(TeamWin);
                     multiMatch.AnalyzedData = AnalyzeOutput;
 
                     sw.Stop();

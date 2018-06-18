@@ -15,14 +15,18 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
             public Score HighestScore { get; set; }
             public int HighestScorePoints { get; set; }
             public Score[] HighestScores { get; set; }
-            public Dictionary<int, float> BestAccuracies { get; set; }
+            public BestAccuracy[] BestAccuracies { get; set; }
             public List<string> AnalyzedData { get; set; }
 
             public int Team_Red_Wins { get; set; }
             public int Team_Blue_Wins { get; set; }
             public int Draws { get; set; }
+        }
 
-            public User[] Users { get; set; }
+        public class BestAccuracy
+        {
+            public float Accuracy { get; set; }
+            public int userId { get; set; }
         }
 
         public class Score
