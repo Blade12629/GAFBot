@@ -3,7 +3,10 @@ using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Discord_OsuMPAnalyzer
@@ -11,61 +14,80 @@ namespace Discord_OsuMPAnalyzer
     public class MessageHandler
     {
         public DiscordClient dclient = Program._DClient;
+        public static Stopwatch CurStopWatch = new Stopwatch();
+        public static string StopWatchSyntax = "!sw";
+
+
 
         public void NewMessage(MessageCreateEventArgs input)
         {
             if (input.Message.Author == Program._DClient.CurrentUser || input.Message == null) return;
-            if (!input.Message.Author.Username.Contains("??????")) return;
-            
-            string CommandString = input.Message.Content.Split(' ')[0];
+
+            string MessageContent = input.Message.Content;
+
+            string CommandString = MessageContent.Split(' ')[0];
+
+            string[] messageSplit = MessageContent.Split(' ');
+            if (messageSplit[messageSplit.Count() - 1].ToLower() == StopWatchSyntax)
+            {
+                if (CurStopWatch.IsRunning) Task.Run(async () => { await SendMessage(input.Channel, "StopWatch is already running, wait until it's finished."); });
+                else
+                {
+                    CurStopWatch.Reset();
+                    CurStopWatch.Start();
+                }
+                MessageContent.Remove(MessageContent.IndexOf(messageSplit[messageSplit.Count() - 1]), messageSplit[messageSplit.Count() - 1].Length);
+            }
 
             if (CommandString.StartsWith("!"))
             {
-                string sub = input.Message.Content.Substring(CommandString.Length);
+                if (CanAccessChannel(input.Channel.Id))
+                {
+                    string sub = input.Message.Content.Substring(CommandString.Length);
+                    
+                    AccessLevel Acc = GetAccessLevel(input.Author.Id);
 
-                if (CommandString.StartsWith("!roll"))
-                {
-                    int number = 0;
-                    if (int.TryParse(sub, out number))
+                    if (Acc == AccessLevel.user)
                     {
-                        Task.Run(async () => { await SendMessage(input.Channel, string.Format("You rolled {0}!", new Random().Next(0, number).ToString())); });
+                        foreach (DiscordMember member in input.Guild.Members)
+                        {
+                            if (member.Id == input.Author.Id)
+                            {
+                                foreach (DiscordRole drole in member.Roles)
+                                {
+                                    AccessLevel newAcc = GetAccessLevelForRole(drole.Id);
+                                    if ((int)newAcc > (int)Acc) Acc = newAcc;
+                                }
+                            }
+                        }
+                    }
+
+                    OnCommandUsed(CommandString, sub, input, Acc);
+
+                    if (Acc == AccessLevel.banned)
+                    {
+                        Console.WriteLine("Terminating execution user {0} ({1}) is banned!", input.Author.Username, input.Author.Id);
                         return;
                     }
-                    string[] sub2 = sub.Split(' ');
-                    int number2 = 0;
-                    if (int.TryParse(sub2[0], out number) && int.TryParse(sub2[1], out number2))
-                    {
-                        Task.Run(async () => { await SendMessage(input.Channel, string.Format("You rolled {0}", new Random().Next(number, number2)); });
+
+                    if (!CanAccessChannel(input.Channel.Name))
                         return;
-                    }
-                    Task.Run(async () => { await SendMessage(input.Channel, string.Format("unkown command, try !roll number or !roll numberMin numberMax")); });
-                    return;
-                }
-                if (CommandString.StartsWith("!analyze"))
-                {
-                    if (CanAccessChannel(input.Channel.Id))
+
+                    switch (Acc)
                     {
-                        int matchid = 0;
-                        if (sub.Contains("osu.ppy.sh/community/matches/"))
-                        {
-                            if (sub.EndsWith("/")) sub.Remove(sub.Length - 1, 1);
-                            matchid = int.Parse(sub.Substring(sub.LastIndexOf('/')));
-                        }
-                        if (matchid == 0)
-                        {
-                            int.TryParse(sub, out matchid);
-                        }
-                        Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-                        Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(matchid));
-                        Task.Run(async () => 
-                        {
-                            await SendMessage(input.Channel, mpMatch.AnalyzedData.ToArray());
-                        });
+                        case AccessLevel.user:
+                            Command(CommandString, sub, input);
+                            break;
+                        case AccessLevel.Admin:
+                            CommandAdmin(CommandString, sub, input);
+                            break;
+                        case AccessLevel.Developer:
+                            CommandDeveloper(CommandString, sub, input);
+                            break;
                     }
                 }
             }
-
-            Console.WriteLine("{0} {1}: {2}", DateTime.UtcNow, input.Message.Author.Username, input.Message.Content);
+            else Console.WriteLine("{0} {1}: {2}", DateTime.UtcNow, input.Message.Author.Username, input.Message.Content);
 
             //string MatchString = "https://osu.ppy.sh/community/matches/";
             //if (Message.StartsWith(MatchString))
@@ -73,8 +95,6 @@ namespace Discord_OsuMPAnalyzer
             //    string sub = Message.Substring(MatchString.Length - 1);
             //    //ToDo
             //}
-            
-
         }
         
         public async Task SendMessage(DiscordChannel channel, params string[] toSend)
@@ -91,8 +111,13 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     return AccessLevel.user;
+
+                case 0:
+                    return AccessLevel.banned;
+
                 case 139769063948681217: //Haruki
                     return AccessLevel.Admin;
+
                 case 140896783717892097: //Skyfly
                     return AccessLevel.Developer;
             }
@@ -104,9 +129,14 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     return AccessLevel.user;
+
+                case 0:
+                    return AccessLevel.banned;
+
                 case 147256133491490817: //Organizer
                 case 147339910926303232: //Co-Organizer
                     return AccessLevel.Admin;
+
                 case 450038874102693888:
                     return AccessLevel.Developer;
             }
@@ -119,18 +149,29 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     return false;
+                case 279248018107006976: //
                 case 450178998228746240: //development_staff
                     return true;
-                case 279248018107006976: //match_results
-                    return Match_Results_Access;
+            }
+        }
+        public bool CanAccessChannel(string channelname)
+        {
+            switch (channelname)
+            {
+                default:
+                    return false;
+                case "match_results":
+                case "development_staff":
+                    return true;
             }
         }
 
         public enum AccessLevel
         {
-            Developer,
+            banned = -1,
+            user,
             Admin,
-            user
+            Developer
         }
 
         public void Command(string arg, string input, MessageCreateEventArgs e)
@@ -139,6 +180,37 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     return;
+                #region !roll
+                case "!roll":
+                        int number = 0;
+                        int number2 = 0;
+
+                        if (int.TryParse(input, out number))
+                        {
+                            Task.Run(async () => { await SendMessage(e.Channel, string.Format("You rolled {0}!", new Random().Next(0, number).ToString())); });
+                            return;
+                        }
+
+                        string[] sub2 = input.Split(' ');
+
+                        if (int.TryParse(sub2[0], out number) && int.TryParse(sub2[1], out number2))
+                        {
+                            Task.Run(async () => { await SendMessage(e.Channel, string.Format("You rolled {0}", new Random().Next(number, number2))); });
+                            return;
+                        }
+
+                        Task.Run(async () => { await SendMessage(e.Channel, string.Format("unkown command, try !roll number or !roll numberMin numberMax")); });
+                    break;
+                #endregion
+                case "!ping":
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+
+                    int ping = dclient.Ping;
+                    sw.Stop();
+
+                    Task.Run(async () => { await SendMessage(e.Channel, string.Format("Current Ping: {0} ({1})", ping, sw.ElapsedMilliseconds)); });
+                    break;
             }
         }
         public void CommandAdmin(string arg, string input, MessageCreateEventArgs e)
@@ -147,7 +219,49 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     Command(arg, input, e);
-                    return;
+                    break;
+                #region !analyze
+                case "!analyze":
+
+                    if (CanAccessChannel(e.Channel.Id))
+                    {
+                        bool error = false;
+                        string toSend = "________________________";
+                        try
+                        {
+                            int matchid = 0;
+                            if (input.Contains("osu.ppy.sh/community/matches/"))
+                            {
+                                if (input.EndsWith("/")) input.Remove(input.Length - 1, 1);
+                                matchid = int.Parse(input.Substring(input.LastIndexOf('/')));
+                            }
+                            else int.TryParse(input, out matchid);
+
+                            if (matchid == 0) Task.Run(async () => await SendMessage(e.Channel, "Could not get ''matchid''"));
+
+                            Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
+                            Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(matchid));
+
+
+                            foreach (string s in mpMatch.AnalyzedData)
+                            {
+                                toSend += string.Format(Environment.NewLine + s);
+                            }
+
+                            toSend += "________________________";
+
+                            Console.WriteLine(mpMatch.HighestScore.userName);
+                        }
+                        catch (Exception ex)
+                        {
+                            error = true;
+                            Console.WriteLine(string.Format("{0}: Executed by {1} Command Args {2}", DateTime.Now, e.Author.Username, arg, ex));
+                        }
+                        if (!error)
+                            Task.Run(async () => { await SendMessage(e.Channel, toSend); });
+                    }
+                    break;
+                    #endregion
             }
         }
         public void CommandDeveloper(string arg, string input, MessageCreateEventArgs e)
@@ -156,7 +270,22 @@ namespace Discord_OsuMPAnalyzer
             {
                 default:
                     CommandAdmin(arg, input, e);
-                    return;
+                    break;
+            }
+            OnCommandDone(arg, input, e);
+        }
+
+        private void OnCommandUsed(string arg, string input, MessageCreateEventArgs e, AccessLevel CurAccessLevel)
+        {
+            Console.WriteLine("{0}#{1} ({2}) | {3} used command {4} with input {5} on channel {6} ({7}) @{8}({9})", e.Author.Username, e.Author.Discriminator, e.Author.Id, CurAccessLevel.ToString(), arg, input, e.Channel.Name, e.Channel.Id, e.Guild.Name, e.Guild.Id);
+        }
+
+        private void OnCommandDone(string arg, string input, MessageCreateEventArgs e)
+        {
+            if (CurStopWatch.IsRunning)
+            {
+                CurStopWatch.Stop();
+                Task.Run(async () => { await SendMessage(e.Channel, "Stopwatch ended. result: {0} ms"); });
             }
         }
     }

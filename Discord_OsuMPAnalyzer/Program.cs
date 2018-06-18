@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using DSharpPlus.Net.WebSocket;
 
 namespace Discord_OsuMPAnalyzer
@@ -63,65 +64,47 @@ namespace Discord_OsuMPAnalyzer
                         {
                             Console.WriteLine("{0} : {1}", e.EventName, e.Exception);
                         };
-#pragma warning disable
+
                         _DClient.MessageCreated += async e =>
                         {
-                            if (e.Author == _DClient.CurrentUser) Task.Run(() =>
-                            {
-                                MessageHandler MH = new MessageHandler();
-                                MH.NewMessage(e);
-                            }
-                            );
+                            Console.WriteLine("{0}: {1} {2} {3}", DateTime.Now, e.Author, e.Author.Username, e.Message.Content);
+                            if (e.Author.Id != _DClient.CurrentUser.Id)
+                                await Task.Run(async () => { await OnMessage(e); });
                         };
-                        #pragma warning restore
-
-                        //Analyze_Format.Analyzed.MultiMatch ToAnalyze = new Analyze_Format.Analyzed.MultiMatch();
-
-                        //Analyze_Format.Analyzer.MultiplayerMatch MPMatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-                        //MPMatch.MPJson = API.OsuApi.GetMatch(42788258);
-                        //ToAnalyze = MPMatch.Analyze(MPMatch.MPJson);
-
-                        //foreach (string s in ToAnalyze.AnalyzedData) Console.WriteLine(s);
 
 
-                        //List<string> toWrite = new List<string>();
 
-                        //foreach (KeyValuePair<ulong, DiscordGuild> dguildKvp in _DClient.Guilds)
-                        //{
-                        //    DiscordGuild dguild = dguildKvp.Value;
+                            //Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
+                            //Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(42788258));
 
-                        //    string output = string.Format("Guild {0} : Owner: {1} Channels: {2} Members: {3}", dguild.Name, dguild.Owner, dguild.Channels, dguild.MemberCount);
-                        //    Console.WriteLine(DateTime.UtcNow + " -->> " + output);
-                        //    toWrite.Add(output);
-                        //    foreach (DiscordChannel dchannel in dguild.Channels)
-                        //    {
-                        //        output = string.Format("------Channel {0}: Id: {1} GuildId: {2} channelType: {3}", dchannel.Name, dchannel.Id, dchannel.GuildId, dchannel.Type);
-                        //        Console.WriteLine(DateTime.UtcNow + " -->> " + output);
-                        //        toWrite.Add(output);
-                        //    }
-                        //    foreach (DiscordMember dmember in dguild.Members)
-                        //    {
-                        //        string roles = "";
-                        //        output = string.Format("------------User {0}: DisplayName: {1} MemberId: {2} Roles: {3}", dmember.Username, dmember.DisplayName, dmember.Id, roles);
-                        //        Console.WriteLine(DateTime.UtcNow + " -->> " + output);
-                        //        foreach (DiscordRole drole in dmember.Roles) roles += string.Format(" | {0} id: {1}", drole.Name, drole.Id);
-                        //        toWrite.Add(output);
-                        //    }
-                        //    foreach (DiscordRole drole in dguild.Roles)
-                        //    {
-                        //        output = string.Format("------------------Role {0} : {1}", drole.Name, drole.Id);
-                        //        Console.WriteLine(output);
-                        //        toWrite.Add(output);
-                        //    }
-                        //}
-                        //Console.WriteLine("Saving output to {0}....", Directory.GetCurrentDirectory());
+                            //string toSend = "________________________";
 
-                        //using (StreamWriter sw = new StreamWriter(Directory.GetCurrentDirectory() + @"\botinfo.info", false))
-                        //{
-                        //    foreach (string s in toWrite) sw.WriteLine(s);
-                        //}
+                            //foreach (string s in mpMatch.AnalyzedData)
+                            //{
+                            //    toSend += string.Format(Environment.NewLine + s);
+                            //}
 
-                        await Task.Delay(-1);
+                            //toSend += "________________________";
+
+                            //#pragma warning restore
+
+                            //Analyze_Format.Analyzed.MultiMatch ToAnalyze = new Analyze_Format.Analyzed.MultiMatch();
+
+                            //Analyze_Format.Analyzer.MultiplayerMatch MPMatch = new Analyze_Format.Analyzer.MultiplayerMatch();
+                            //MPMatch.MPJson = API.OsuApi.GetMatch(42788258);
+                            //ToAnalyze = MPMatch.Analyze(MPMatch.MPJson);
+
+                            //foreach (string s in ToAnalyze.AnalyzedData) Console.WriteLine(s);
+
+                            //using (StreamWriter sw = new StreamWriter("output.txt"))
+                            //{
+                            //    foreach (string s in ToAnalyze.AnalyzedData)
+                            //        sw.WriteLine(s);
+                            //}
+
+
+
+                            await Task.Delay(-1);
                     }
                     else
                     {
@@ -143,9 +126,51 @@ namespace Discord_OsuMPAnalyzer
             }
         }
 
+        private static async Task OnMessage(MessageCreateEventArgs e)
+        {
+            MessageHandler MH = new MessageHandler();
+            MH.NewMessage(e);
+        }
+
         private static async Task Event_DClient_Ready(DSharpPlus.EventArgs.ReadyEventArgs e)
         {
-            Console.WriteLine("DiscordClient is Ready");
+            try
+            {
+                Console.WriteLine("DiscordClient is now ready...");
+                List<string> toWrite = new List<string>();
+                List<DiscordGuild> DGuilds = new List<DiscordGuild>();
+
+                foreach (KeyValuePair<ulong, DiscordGuild> KvpGuild in _DClient.Guilds)
+                {
+                    DGuilds.Add(KvpGuild.Value);
+                }
+
+                foreach (DiscordGuild DGuild in DGuilds)
+                {
+                    toWrite.Add(string.Format("DGuild: {0} {1}", DGuild.Id, DGuild.Name));
+                    foreach (DiscordChannel DChannel in DGuild.Channels)
+                        toWrite.Add(string.Format("DChannel {1}", DChannel.Name, DChannel.Id));
+
+                    foreach (DiscordMember DMember in DGuild.Members)
+                        toWrite.Add(string.Format("DMember {0} {1} {2}", DMember.Id, DMember.DisplayName, DMember.Username));
+                }
+
+                foreach (string s in toWrite)
+                {
+                    Console.WriteLine(s);
+                }
+
+                using (StreamWriter sw = new StreamWriter("botinfo2.txt"))
+                {
+                    foreach (string s in toWrite)
+                        sw.WriteLine(s);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+
         }
     }
 }

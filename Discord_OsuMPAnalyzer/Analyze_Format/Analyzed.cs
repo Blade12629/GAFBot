@@ -15,7 +15,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
             public Score HighestScore { get; set; }
             public int HighestScorePoints { get; set; }
             public Score[] HighestScores { get; set; }
-            public Score[] BestAccuracies { get; set; }
+            public Dictionary<int, float> BestAccuracies { get; set; }
             public List<string> AnalyzedData { get; set; }
 
             public int Team_Red_Wins { get; set; }
@@ -33,6 +33,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
             public float starRating { get; set; }
             public string userName { get; set; }
             public int user_id { get { return userScore.user_id; } }
+            public float Acc { get; set; }
             public Json.Get_Match_Json.JsonFormat._games._scores userScore { get; set; }
         }
 

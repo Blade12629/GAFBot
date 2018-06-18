@@ -28,7 +28,7 @@ namespace Discord_OsuMPAnalyzer.Json
             {
                 public int game_id { get; set; }
                 public DateTime start_time { get; set; }
-                public DateTime end_time { get; set; }
+                public Object end_time { get; set; }
                 public int beatmap_id { get; set; }
                 // standard = 0, taiko = 1, ctb = 2, o!m = 3
                 public int play_mode { get; set; }
