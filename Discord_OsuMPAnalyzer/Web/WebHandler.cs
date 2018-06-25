@@ -10,7 +10,7 @@ namespace Discord_OsuMPAnalyzer.Web
         public static string Download(string url)
         {
             if (!CheckClient) m_WebClient = new WebClient();
-
+            string dlstring = m_WebClient.DownloadString(url);
             return m_WebClient.DownloadString(url);
         }
     }

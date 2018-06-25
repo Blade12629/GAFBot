@@ -23,13 +23,14 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
             return (result / numbers.Count());
         }
-
+        
         public class MultiplayerMatch
         {
             public Get_Match_Json.JsonFormat MPJson { get; set; }
 
             private Analyzed.MultiMatch m_result;
             
+
             private Analyzed.MultiMatch CalculateScores(Analyzed.MultiMatch MPMatch)
             {
                 try
@@ -66,13 +67,6 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     }
                     Get_Match_Json.JsonFormat._games._scores HighestScore = Scores.ElementAt(IVal[0]).Key;
                     Get_Match_Json.JsonFormat._games HighestScoreGame = Scores.ElementAt(IVal[0]).Value;
-
-                    //Set Top 1-4 Players for acc ranking
-                    int rankingMax = 4;
-
-                    //Incase there aren't 4 players
-                    while (rankingMax > AvgUserAcc.Count - 1 && rankingMax != 1)
-                        rankingMax--;
 
                     List<Analyzed.BestAccuracy> BestAccuracies = new List<Analyzed.BestAccuracy>();
 
@@ -129,7 +123,7 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     for (int i = 0; i < mpJson.games.Count(); i++)
                     {
                         int HighestPoints = int.MinValue;
-                        int index = 0;
+                        int indexx = 0;
 
                         int PointsTeamBlue = 0;
                         int PointsTeamRed = 0;
@@ -158,10 +152,10 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
                             if (HighestPoints < Score)
                             {
-                                index = x;
+                                indexx = x;
                                 HighestPoints = Score;
                             }
-                            Scores.Add(new Analyzed.Score() { userScore = CurGame.scores.ElementAt(index), beatmapID = CurGame.beatmap_id });
+                            Scores.Add(new Analyzed.Score() { userScore = CurGame.scores.ElementAt(indexx), beatmapID = CurGame.beatmap_id });
                         }
 
                         if (PointsTeamRed > PointsTeamBlue) multiMatch.Team_Red_Wins++;
@@ -182,36 +176,62 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
                     AnalyzeOutput.Add(string.Format("| Game: {0} ({1})", multiMatch.CurrentMatch.name, multiMatch.CurrentMatch.match_id));
 
+                    //value, index
+                    float[] index = { float.MinValue, 0 };
+                    string n = "";
+                    int place = 1;
+                    
+                    List<int> userDone = new List<int>();
+
                     for (int i = 0; i < multiMatch.BestAccuracies.Count(); i++)
                     {
                         float Acc = multiMatch.BestAccuracies.ElementAt(i).Accuracy;
-                        string place = "";
+                        int userid = multiMatch.BestAccuracies.ElementAt(i).userId;
 
-                        if (Acc == 0)
+                        if (userDone.Contains(userid))
                             continue;
 
-                        Get_User_Json.JsonFormat userJson = API.OsuApi.GetUser(multiMatch.BestAccuracies.ElementAt(i).userId);
-                        string name = userJson.username;
+                        Get_User_Json.JsonFormat user = API.OsuApi.GetUser(multiMatch.BestAccuracies.ElementAt(i).userId);
+                        string name = user.username;
 
-                        Console.WriteLine(i + " " + name);
-                        switch (i + 1)
+
+                        if (index[0] < Acc)
                         {
-                            default:
-                                place = string.Format("{0}th", i + 1);
-                                break;
-                            case 1:
-                                place = "first";
-                                break;
-                            case 2:
-                                place = "second";
-                                break;
-                            case 3:
-                                place = "third";
-                                break;
+                            n = name;
+                            index = new float[] { Acc, i };
                         }
-                        string s = string.Format("| :{0}_place: Player: {1} Acc: {2}%", place, name, Acc);
-                        Console.WriteLine(s);
-                        AnalyzeOutput.Add(s);
+
+                        if (i == multiMatch.BestAccuracies.Count() - 1)
+                        {
+                            i = 0;
+                            int iindex = Convert.ToInt32(index[1]);
+                            userDone.Add(multiMatch.BestAccuracies.ElementAt(iindex).userId);
+                            float AAcc = multiMatch.BestAccuracies.ElementAt(iindex).Accuracy;
+                            string nname = n;
+
+                            index = new float[] { float.MinValue, 0 };
+
+                            switch (place)
+                            {
+                                case 1:
+                                    AnalyzeOutput.Add(string.Format("| First place: {0} Acc: {1}%", nname, AAcc));
+                                    place++;
+                                    break;
+                                case 2:
+                                    AnalyzeOutput.Add(string.Format("| Second place: {0} Acc: {1}%", nname, AAcc));
+                                    place++;
+                                    break;
+                                case 3:
+                                    AnalyzeOutput.Add(string.Format("| Third place: {0} Acc: {1}%", nname, AAcc));
+                                    place++;
+                                    break;
+                                default:
+                                    AnalyzeOutput.Add(string.Format("| {0}th place: {1} Acc: {2}%", place, nname, AAcc));
+                                    place++;
+                                    break;
+
+                            }
+                        }
                     }
 
                     AnalyzeOutput.Add(string.Format("| The highest Score got {0} on the map {1} [{2}] ({3}*) with {4} Points and {5}% Accuracy!", multiMatch.HighestScore.userName, multiMatch.HighestScore.beatmapName, multiMatch.HighestScore.difficulty, multiMatch.HighestScore.starRating, multiMatch.HighestScore.userScore.score, multiMatch.HighestScore.Acc));
@@ -231,7 +251,6 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
                     multiMatch.AnalyzedData = AnalyzeOutput;
 
                     sw.Stop();
-                    Console.WriteLine("took {0} to analyze! (Download times included)", sw.ElapsedMilliseconds);
                     #endregion
                     return multiMatch;
                 }

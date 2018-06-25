@@ -26,8 +26,7 @@ namespace Discord_OsuMPAnalyzer
         {
             MainTask(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
-
-
+        
         public static async Task MainTask(string[] args)
         {
             try
@@ -73,8 +72,6 @@ namespace Discord_OsuMPAnalyzer
                                 await Task.Run(async () => { await OnMessage(e); });
                         };
 
-
-
                         //Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
                         //Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(42788258));
 
@@ -100,9 +97,7 @@ namespace Discord_OsuMPAnalyzer
                         //    foreach (string s in ToAnalyze.AnalyzedData)
                         //        sw.WriteLine(s);
                         //}
-
-
-
+                        //await Analyze(43024042);
                         await Task.Delay(-1);
                     }
                     else
@@ -123,6 +118,17 @@ namespace Discord_OsuMPAnalyzer
                 }
 
             }
+        } 
+
+        private static async Task Analyze(int matchID)
+        {
+            Console.WriteLine("analyzing...");
+            Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
+            Json.Get_Match_Json.JsonFormat match = API.OsuApi.GetMatch(matchID);
+            Analyze_Format.Analyzed.MultiMatch MPMatch = mpmatch.Analyze(match);
+            Console.WriteLine("analyzed");
+            foreach (string s in MPMatch.AnalyzedData)
+            Console.WriteLine(s);
         }
 
         private static async Task OnMessage(MessageCreateEventArgs e)
