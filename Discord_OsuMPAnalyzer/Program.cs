@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
@@ -26,18 +27,22 @@ namespace Discord_OsuMPAnalyzer
         {
             MainTask(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
-        
+        public static EventWaitHandle EWH;
+
         public static async Task MainTask(string[] args)
         {
             try
             {
                 bool LoadedConfig = Config.LoadConfig();
+                if (EWH == null)
+                    EWH = new EventWaitHandle(false, EventResetMode.ManualReset);
 
                 if (LoadedConfig)
                 {
                     if (_DClient == null)
                     {
                         Console.WriteLine("{0}, {1}, {2}", LoadedConfig, Config.OsuApiKey, Config.DiscordClientSecret);
+
                         DiscordConfiguration dconfig = new DiscordConfiguration()
                         {
                             Token = Config.DiscordClientSecret,
@@ -64,13 +69,44 @@ namespace Discord_OsuMPAnalyzer
                         {
                             Console.WriteLine("{0} : {1}", e.EventName, e.Exception);
                         };
-
+                        EWH.WaitOne();
                         _DClient.MessageCreated += async e =>
                         {
                             Console.WriteLine("{0}: {1} {2} {3}", DateTime.Now, e.Author, e.Author.Username, e.Message.Content);
                             if (e.Author.Id != _DClient.CurrentUser.Id)
                                 await Task.Run(async () => { await OnMessage(e); });
                         };
+
+                        //History_Endpoint.Reader R = new History_Endpoint.Reader("https://osu.ppy.sh/community/matches/43024042/history");
+                        //R.Read();
+
+
+                        //int[] matchIDs = new int[]
+                        //{
+                        //    43024042,
+                        //    44168108,
+                        //    44167046,
+                        //    44166294,
+                        //    44166457,
+                        //    44166862
+                        //};
+
+                        //    foreach (int i in matchIDs)
+                        //    {
+                        //        Analyze_Format.OsuAnalyzer.HistoryReader hr = Analyze_Format.OsuAnalyzer.ParseMatch(i.ToString());
+                        //        hr.Output.ToList().ForEach(ob => Console.WriteLine(ob));
+                        //    }
+
+                        //Console.WriteLine("Match: " + matchIDs[i]);
+                        //Analyze_Format.Analyzer.NewAnalyzer newAnalyzer = new Analyze_Format.Analyzer.NewAnalyzer();
+                        //newAnalyzer.CreateStatistic("https://osu.ppy.sh/community/matches/" + matchIDs[i] +"/history");
+
+                        //for (int x = 0; x < newAnalyzer.Statistic.Count(); x++)
+                        //{
+                        //    Console.WriteLine(newAnalyzer.Statistic[x]);
+                        //}
+
+
 
                         //Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
                         //Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(42788258));
@@ -97,7 +133,7 @@ namespace Discord_OsuMPAnalyzer
                         //    foreach (string s in ToAnalyze.AnalyzedData)
                         //        sw.WriteLine(s);
                         //}
-                        //await Analyze(43024042);
+                        //await Analyze(43024042
                         await Task.Delay(-1);
                     }
                     else
@@ -120,17 +156,6 @@ namespace Discord_OsuMPAnalyzer
             }
         } 
 
-        private static async Task Analyze(int matchID)
-        {
-            Console.WriteLine("analyzing...");
-            Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-            Json.Get_Match_Json.JsonFormat match = API.OsuApi.GetMatch(matchID);
-            Analyze_Format.Analyzed.MultiMatch MPMatch = mpmatch.Analyze(match);
-            Console.WriteLine("analyzed");
-            foreach (string s in MPMatch.AnalyzedData)
-            Console.WriteLine(s);
-        }
-
         private static async Task OnMessage(MessageCreateEventArgs e)
         {
             MessageHandler MH = new MessageHandler();
@@ -142,6 +167,7 @@ namespace Discord_OsuMPAnalyzer
             try
             {
                 Console.WriteLine("DiscordClient is now ready...");
+                EWH.Set();
                 List<string> toWrite = new List<string>();
                 List<DiscordGuild> DGuilds = new List<DiscordGuild>();
 

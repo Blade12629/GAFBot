@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OsuHistoryEndPoint;
 
 namespace Discord_OsuMPAnalyzer.Analyze_Format
 {
@@ -23,241 +24,268 @@ namespace Discord_OsuMPAnalyzer.Analyze_Format
 
             return (result / numbers.Count());
         }
-        
-        public class MultiplayerMatch
+
+        public class NewAnalyzer
         {
-            public Get_Match_Json.JsonFormat MPJson { get; set; }
-
-            private Analyzed.MultiMatch m_result;
-            
-
-            private Analyzed.MultiMatch CalculateScores(Analyzed.MultiMatch MPMatch)
+            public NewAnalyzer()
             {
-                try
-                {
-                    //Score, Game
-                    Dictionary<Get_Match_Json.JsonFormat._games._scores, Get_Match_Json.JsonFormat._games> Scores = new Dictionary<Get_Match_Json.JsonFormat._games._scores, Get_Match_Json.JsonFormat._games>();
-
-                    foreach (Get_Match_Json.JsonFormat._games CurGame in MPMatch.CurrentGames)
-                        foreach (Get_Match_Json.JsonFormat._games._scores CurScore in CurGame.scores)
-                            Scores.Add(CurScore, CurGame);
-
-                    #region GetInformation
-                    //HighestScore
-                    int[] IVal = { 0, Scores.Keys.ElementAt(0).score };
-                    //Average Acc for all players
-                    Dictionary<int, float> AvgUserAcc = new Dictionary<int, float>();
-
-                    for (int i = 0; i < Scores.Count; i++)
-                    {
-                        //Get highest score
-                        if (IVal.ElementAt(1) < Scores.ElementAt(i).Key.score)
-                            IVal = new int[] { i, Scores.ElementAt(i).Key.score };
-
-                        //Get average acc
-                        float AvgAcc = CalculateAccuracy(Scores.ElementAt(i).Key.count300, Scores.ElementAt(i).Key.count100, Scores.ElementAt(i).Key.count50, Scores.ElementAt(i).Key.countmiss);
-
-                        if (AvgUserAcc.Count == 0 || !AvgUserAcc.ContainsKey(Scores.ElementAt(i).Key.user_id))
-                        {
-                            AvgUserAcc.Add(Scores.ElementAt(i).Key.user_id, AvgAcc);
-                            continue;
-                        }
-
-                        AvgUserAcc[Scores.ElementAt(i).Key.user_id] = AvgAcc;
-                    }
-                    Get_Match_Json.JsonFormat._games._scores HighestScore = Scores.ElementAt(IVal[0]).Key;
-                    Get_Match_Json.JsonFormat._games HighestScoreGame = Scores.ElementAt(IVal[0]).Value;
-
-                    List<Analyzed.BestAccuracy> BestAccuracies = new List<Analyzed.BestAccuracy>();
-
-                    foreach (KeyValuePair<int, float> kvpUser in AvgUserAcc)
-                        BestAccuracies.Add(new Analyzed.BestAccuracy() { Accuracy = kvpUser.Value, userId = kvpUser.Key });
-
-                    MPMatch.BestAccuracies = BestAccuracies.ToArray();
-                    #endregion
-
-                    MPMatch.HighestScore = new Analyzed.Score()
-                    {
-                        Acc = CalculateAccuracy(HighestScore.count300, HighestScore.count100, HighestScore.count50, HighestScore.countmiss),
-                        beatmapID = HighestScoreGame.beatmap_id,
-                        beatmapName = "",
-                        difficulty = "",
-                        starRating = 0,
-                        userName = "",
-                        userScore = HighestScore
-                    };
-                    MPMatch.HighestScorePoints = MPMatch.HighestScore.userScore.score;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(DateTime.UtcNow + " : " + e);
-                }
-                return MPMatch;
             }
 
-            public Analyzed.MultiMatch Result { get { return m_result; } }
+            public string[] Statistic { get; set; }
 
-
-            #region 1
-            public virtual Analyzed.MultiMatch Analyze(Get_Match_Json.JsonFormat mpJson)
+            public void CreateStatistic(HistoryJson.History history)
             {
                 try
                 {
-                    if (mpJson == null) return null;
+                    List<string> Statistics = new List<string>();
+                    HistoryJson.Game[] Games = GetData.GetMatches(history);
 
-                    Stopwatch sw = new Stopwatch();
-                    sw.Start();
-
-                    MPJson = mpJson;
-
-                    Analyzed.MultiMatch multiMatch = new Analyzed.MultiMatch();
-
-                    multiMatch.CurrentGames = MPJson.games;
-                    multiMatch.CurrentMatch = MPJson.match;
-                    multiMatch = CalculateScores(multiMatch);
-                    #endregion
-
-                    //beatmap_id, scores, highest score on each map
-                    List<Analyzed.Score> Scores = new List<Analyzed.Score>();
-                    
-                    for (int i = 0; i < mpJson.games.Count(); i++)
+                    foreach(HistoryJson.Event ev in history.Events)
                     {
-                        int HighestPoints = int.MinValue;
-                        int indexx = 0;
-
-                        int PointsTeamBlue = 0;
-                        int PointsTeamRed = 0;
-                        
-                        Get_Match_Json.JsonFormat._games CurGame = mpJson.games.ElementAt(i);
-                        
-                        for (int x = 0; x < CurGame.scores.Count(); x++)
+                        if (ev.Detail.Type == "other")
                         {
-                            int Score = CurGame.scores.ElementAt(x).score;
-                            Get_Match_Json.JsonFormat._games._scores CurScore = CurGame.scores.ElementAt(x);
+                            Statistics.Add("| " + ev.Detail.MatchName);
+                            break;
+                        }
+                    }
+                    //string matchName = GetData.GetMatchNames(history)[0];
 
-                            if (CurScore.pass != 0)
+                    List<Player> Players = new List<Player>();
+                    HistoryJson.BeatMap highestScoreBeatMap = null;
+                    KeyValuePair<int, HistoryJson.Score> HighestScorePlayer = new KeyValuePair<int, HistoryJson.Score>(-1, null);
+
+                    #region GetPlayerScoresAndAvgAcc_And_GetHighestScorePlayer
+                    List<HistoryJson.Score> _scores = new List<HistoryJson.Score>();
+                    List<Player> _players = new List<Player>();
+
+                    //foreach (HistoryJson.User user in history.Users)
+                    //{
+                    //    Player pl = new Player();
+                    //    pl.UserId 
+                    //}
+
+                    //Get all scores
+                    for (int i = 2; i < Games.Count(); i++)
+                    {
+                        HistoryJson.Game game = Games[i];
+
+                        if (game.scores != null)
+                        {
+                            foreach (HistoryJson.Score score in game.scores)
                             {
-                                switch (CurScore.team)
+                                Player curPlayer = Players.Find(ob => ob.UserId == score.user_id);
+
+                                if (HighestScorePlayer.Key == -1)
                                 {
-                                    default:
-                                        break;
-                                    case 1:
-                                        PointsTeamBlue += CurScore.score;
-                                        break;
-                                    case 2:
-                                        PointsTeamRed += CurScore.score;
-                                        break;
+                                    HighestScorePlayer = new KeyValuePair<int, HistoryJson.Score>(score.user_id.Value, score);
+                                    highestScoreBeatMap = game.beatmap;
+                                }
+
+                                if (score.score.Value > HighestScorePlayer.Value.score.Value)
+                                {
+                                    HighestScorePlayer = new KeyValuePair<int, HistoryJson.Score>(score.user_id.Value, score);
+                                    highestScoreBeatMap = game.beatmap;
+                                }
+
+                                if (curPlayer == null)
+                                {
+                                    curPlayer = new Player() { Scores = new HistoryJson.Score[] { } };
+                                    curPlayer.UserName = GetData.GetUser(score.user_id.Value, history).Username;
+                                    curPlayer.UserId = score.user_id.Value;
+                                    curPlayer.Scores.Append(score);
+                                }
+                                else
+                                {
+
                                 }
                             }
-
-                            if (HighestPoints < Score)
-                            {
-                                indexx = x;
-                                HighestPoints = Score;
-                            }
-                            Scores.Add(new Analyzed.Score() { userScore = CurGame.scores.ElementAt(indexx), beatmapID = CurGame.beatmap_id });
                         }
-
-                        if (PointsTeamRed > PointsTeamBlue) multiMatch.Team_Red_Wins++;
-                        else if (PointsTeamRed < PointsTeamBlue) multiMatch.Team_Blue_Wins++;
-                        else multiMatch.Draws++;
                     }
-                   
-                    #region 3
-                    Get_User_Json.JsonFormat UserJson = API.OsuApi.GetUser(multiMatch.HighestScore.user_id);
-                    Get_Beatmaps.JsonFormat BeatmapsJson = API.OsuApi.Get_BeatMap(multiMatch.HighestScore.beatmapID);
-                    multiMatch.HighestScore.beatmapName = string.Format("{0} - {1}", BeatmapsJson.artist, BeatmapsJson.title);
-                    multiMatch.HighestScore.difficulty = BeatmapsJson.version;
-                    multiMatch.HighestScore.starRating = BeatmapsJson.difficultyrating;
-                    multiMatch.HighestScore.userName = UserJson.username;
-                    multiMatch.HighestScore.Acc = CalculateAccuracy(multiMatch.HighestScore.userScore.count300, multiMatch.HighestScore.userScore.count100, multiMatch.HighestScore.userScore.count50, multiMatch.HighestScore.userScore.countmiss);
-
-                    List<string> AnalyzeOutput = new List<string>();
-
-                    AnalyzeOutput.Add(string.Format("| Game: {0} ({1})", multiMatch.CurrentMatch.name, multiMatch.CurrentMatch.match_id));
-
-                    //value, index
-                    float[] index = { float.MinValue, 0 };
-                    string n = "";
-                    int place = 1;
-                    
-                    List<int> userDone = new List<int>();
-
-                    for (int i = 0; i < multiMatch.BestAccuracies.Count(); i++)
+                    foreach (Player pl in Players)
                     {
-                        float Acc = multiMatch.BestAccuracies.ElementAt(i).Accuracy;
-                        int userid = multiMatch.BestAccuracies.ElementAt(i).userId;
+                        float acc = 0;
 
-                        if (userDone.Contains(userid))
-                            continue;
+                        pl.Scores.ToList().ForEach(ob => acc += ob.accuracy.Value);
+                        pl.AvgAcc = acc / pl.Scores.Count() * 100;
+                        Console.WriteLine("PL {0} acc {1}", pl.UserId, pl.AvgAcc);
+                    }
+                    #endregion
 
-                        Get_User_Json.JsonFormat user = API.OsuApi.GetUser(multiMatch.BestAccuracies.ElementAt(i).userId);
-                        string name = user.username;
+                    #region SetPlayersInAvgAccOrder
+                    List<Player> newPlayers = new List<Player>();
 
+                    float[] indexVal = { -1, -1 };
 
-                        if (index[0] < Acc)
+                    for (int i = 0; i < Players.Count; i++)
+                    {
+                        if (Players.Count() == 0)
+                            break;
+
+                        if (indexVal[1] < Players[i].AvgAcc)
+                            indexVal = new float[] { i, Players[i].AvgAcc };
+
+                        if (i == Players.Count() - 1)
                         {
-                            n = name;
-                            index = new float[] { Acc, i };
-                        }
-
-                        if (i == multiMatch.BestAccuracies.Count() - 1)
-                        {
+                            Player _player = Players[Convert.ToInt32(indexVal[0])];
+                            newPlayers.Add(_player);
+                            Players.Remove(_player);
+                            indexVal = new float[] { -1, 0 };
                             i = 0;
-                            int iindex = Convert.ToInt32(index[1]);
-                            userDone.Add(multiMatch.BestAccuracies.ElementAt(iindex).userId);
-                            float AAcc = multiMatch.BestAccuracies.ElementAt(iindex).Accuracy;
-                            string nname = n;
 
-                            index = new float[] { float.MinValue, 0 };
-
-                            switch (place)
+                            switch (newPlayers.Count())
                             {
                                 case 1:
-                                    AnalyzeOutput.Add(string.Format("| First place: {0} Acc: {1}%", nname, AAcc));
-                                    place++;
+                                    Statistics.Add(string.Format("First Place: {0} Acc: {1}", _player.UserName, _player.AvgAcc));
                                     break;
                                 case 2:
-                                    AnalyzeOutput.Add(string.Format("| Second place: {0} Acc: {1}%", nname, AAcc));
-                                    place++;
+                                    Statistics.Add(string.Format("Second Place: {0} Acc: {1}", _player.UserName, _player.AvgAcc));
                                     break;
                                 case 3:
-                                    AnalyzeOutput.Add(string.Format("| Third place: {0} Acc: {1}%", nname, AAcc));
-                                    place++;
+                                    Statistics.Add(string.Format("Third Place: {0} Acc: {1}", _player.UserName, _player.AvgAcc));
+                                    break;
+                                case 4:
+                                    Statistics.Add(string.Format("Fourth Place: {0} Acc: {1}", _player.UserName, _player.AvgAcc));
                                     break;
                                 default:
-                                    AnalyzeOutput.Add(string.Format("| {0}th place: {1} Acc: {2}%", place, nname, AAcc));
-                                    place++;
+                                    Statistics.Add(string.Format("{0}. Place: {1} Acc: {2}", newPlayers.Count(), _player.UserName, _player.AvgAcc));
                                     break;
-
                             }
                         }
                     }
-
-                    AnalyzeOutput.Add(string.Format("| The highest Score got {0} on the map {1} [{2}] ({3}*) with {4} Points and {5}% Accuracy!", multiMatch.HighestScore.userName, multiMatch.HighestScore.beatmapName, multiMatch.HighestScore.difficulty, multiMatch.HighestScore.starRating, multiMatch.HighestScore.userScore.score, multiMatch.HighestScore.Acc));
-
-                    string TeamWin = "| Team ";
-
-                    if (multiMatch.Team_Blue_Wins > multiMatch.Team_Red_Wins)
-                        TeamWin += "Blue wins";
-                    else if (multiMatch.Team_Red_Wins > multiMatch.Team_Blue_Wins)
-                        TeamWin += "Red wins";
-                    else
-                        TeamWin = "draw";
-
-                    TeamWin += string.Format(" (Red: {0} | Blue: {1})", multiMatch.Team_Red_Wins, multiMatch.Team_Blue_Wins);
-
-                    AnalyzeOutput.Add(TeamWin);
-                    multiMatch.AnalyzedData = AnalyzeOutput;
-
-                    sw.Stop();
+                    Players = newPlayers;
                     #endregion
-                    return multiMatch;
+
+                    string username = GetData.GetUser(HighestScorePlayer.Key, history).Username;
+                    int x = 0;
+
+                    Statistics.Add(string.Format("| The highest Score got {0} on the map {1} - {2} [{3}] with {4} Points and {5}% Accuracy!", username, highestScoreBeatMap.beatmapset.artist, highestScoreBeatMap.beatmapset.title, highestScoreBeatMap.version, HighestScorePlayer.Value.score.Value, HighestScorePlayer.Value.accuracy));
+
+                    KeyValuePair<int, int> wins = new KeyValuePair<int, int>(0, 0);
+
+                    foreach (HistoryJson.Game game in Games)
+                    {
+                        if (game.team_type != "team-vs" || game.beatmap == null)
+                            continue;
+                        
+                        int BlueSC = 0;
+                        int RedSC = 0;
+
+                        foreach (HistoryJson.Score score in game.scores)
+                        {
+                            HistoryJson.Multiplayer multiplayer = score.multiplayer;
+
+                            if (multiplayer.pass == 0)
+                                continue;
+
+                            switch (multiplayer.team)
+                            {
+                                case "red":
+                                    RedSC += score.score.Value;
+                                    break;
+                                case "blue":
+                                    BlueSC += score.score.Value;
+                                    break;
+                            }
+                        }
+                        if (BlueSC > RedSC)
+                            wins = new KeyValuePair<int, int>(wins.Key, wins.Value + 1);
+                        if (RedSC > BlueSC)
+                            wins = new KeyValuePair<int, int>(wins.Key + 1, wins.Value);
+                    }
+
+                    string winner = null;
+                    int point1 = 0;
+                    int point2 = 0;
+                    if (wins.Key > wins.Value)
+                    {
+                        winner = "Team red wins!";
+                        point1 = wins.Key;
+                        point2 = wins.Value;
+                    }
+                    else if (wins.Key < wins.Value)
+                    {
+                        winner = "Team blue wins!";
+                        point1 = wins.Value;
+                        point2 = wins.Key;
+                    }
+                    else if (wins.Key == wins.Value)
+                    {
+                        winner = "it's a draw";
+                        point1 = wins.Key;
+                        point2 = wins.Value;
+                    }
+
+                    Statistics.Add(string.Format("| {0} ({1} : {2})", winner, point1, point2));
+                    Statistic = Statistics.ToArray();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
-                    return new Analyzed.MultiMatch();
+                    Console.WriteLine(DateTime.UtcNow + ": " + ex);
+                }
+            }
+
+            public void CreateStatistic(string HistoryEndPoint)
+            {
+                HistoryJson.History history = CreateHistoryJSon(HistoryEndPoint);
+                CreateStatistic(history);
+            }
+
+            public OsuHistoryEndPoint.HistoryJson.History CreateHistoryJSon(string HistoryEndPoint)
+            {
+                HistoryJson.History history = new HistoryJson.History();
+                history = OsuHistoryEndPoint.GetData.ParseJsonFromUrl(HistoryEndPoint);
+                
+                return history;
+            }
+
+            public class Match
+            {
+                public HistoryJson.History MatchHistory { get; set; }
+                public Player[] Players { get; set; }
+                public Team.TeamColor Winner { get; set; }
+                public Team[] Teams { get; set; }
+            }
+
+            public class Team
+            {
+                public enum TeamColor
+                {
+                    Red,
+                    Blue
+                }
+
+                public TeamColor teamColor { get; set; }
+                public int[] userIds { get; set; }
+            }
+
+            public class Player
+            {
+                public int UserId { get; set; }
+                public string UserName { get; set; }
+                public HistoryJson.Score[] Scores { get; set; }
+                //{
+                //    get { return Scores; }
+                //    set
+                //    {
+                //        Scores = value;
+                //        float[] Acc = new float[] { };
+
+                //        Scores.ToList().ForEach(ob => Acc.Append(ob.accuracy.Value));
+                //        float newAcc = CalculateAverageAccuracy(Acc);
+
+                //        AvgAcc = newAcc;
+                //    }
+                //}
+                public float AvgAcc { get; set; }
+
+                public float CalculateAverageAccuracy(params float[] Accs)
+                {
+                    float AvAcc = 0;
+
+                    Accs.ToList().ForEach(ob => AvAcc += ob);
+                    AvAcc /= Accs.Count();
+
+                    return AvAcc;
                 }
             }
         }

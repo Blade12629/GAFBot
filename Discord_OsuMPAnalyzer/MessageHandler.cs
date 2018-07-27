@@ -229,28 +229,9 @@ namespace Discord_OsuMPAnalyzer
                         string toSend = "```";
                         try
                         {
-                            int matchid = 0;
-                            if (input.Contains("osu.ppy.sh/community/matches/"))
-                            {
-                                if (input.EndsWith("/")) input.Remove(input.Length - 1, 1);
-                                matchid = int.Parse(input.Substring(input.LastIndexOf('/')));
-                            }
-                            else int.TryParse(input, out matchid);
-
-                            if (matchid == 0) Task.Run(async () => await SendMessage(e.Channel, "Could not get ''matchid''"));
-
-                            Analyze_Format.Analyzer.MultiplayerMatch mpmatch = new Analyze_Format.Analyzer.MultiplayerMatch();
-                            Analyze_Format.Analyzed.MultiMatch mpMatch = mpmatch.Analyze(API.OsuApi.GetMatch(matchid));
-
-
-                            foreach (string s in mpMatch.AnalyzedData)
-                            {
-                                toSend += string.Format(Environment.NewLine + s);
-                            }
-
+                            Analyze_Format.OsuAnalyzer.HistoryReader hr = Analyze_Format.OsuAnalyzer.ParseMatch(input);
+                            hr.Output.ToList().ForEach(ob => toSend += Environment.NewLine + ob);
                             toSend += Environment.NewLine + "```";
-
-                            Console.WriteLine(mpMatch.HighestScore.userName);
                         }
                         catch (Exception ex)
                         {

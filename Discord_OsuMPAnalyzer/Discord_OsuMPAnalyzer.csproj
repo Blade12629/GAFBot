@@ -56,6 +56,9 @@
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="OsuHistoryEndPoint">
+      <HintPath>..\OsuHistoryEndPoint.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -70,9 +73,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Analyze_Format\Analyzed.cs" />
+    <Compile Include="Analyze_Format\OsuAnalyzer.cs" />
     <Compile Include="API\OsuApi.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Analyze_Format\Analyzer.cs" />
+    <Compile Include="History_Endpoint\History.cs" />
+    <Compile Include="History_Endpoint\Reader.cs" />
     <Compile Include="Json\Get_Beatmaps.cs" />
     <Compile Include="Json\Get_Match_Json.cs" />
     <Compile Include="Json\Json.cs" />
@@ -100,6 +106,10 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="OsuHistoryEndPoint.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
