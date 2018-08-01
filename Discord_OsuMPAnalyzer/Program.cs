@@ -72,9 +72,8 @@ namespace Discord_OsuMPAnalyzer
                         EWH.WaitOne();
                         _DClient.MessageCreated += async e =>
                         {
-                            Console.WriteLine("{0}: {1} {2} {3}", DateTime.Now, e.Author, e.Author.Username, e.Message.Content);
                             if (e.Author.Id != _DClient.CurrentUser.Id)
-                                await Task.Run(async () => { await OnMessage(e); });
+                                Task.Run(async () => { await OnMessage(e); });
                         };
 
                         //History_Endpoint.Reader R = new History_Endpoint.Reader("https://osu.ppy.sh/community/matches/43024042/history");
@@ -158,6 +157,7 @@ namespace Discord_OsuMPAnalyzer
 
         private static async Task OnMessage(MessageCreateEventArgs e)
         {
+            Console.WriteLine("{0}: {1} {2} {3}", DateTime.Now, e.Author, e.Author.Username, e.Message.Content);
             MessageHandler MH = new MessageHandler();
             MH.NewMessage(e);
         }

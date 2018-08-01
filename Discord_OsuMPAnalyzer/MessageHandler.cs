@@ -17,8 +17,6 @@ namespace Discord_OsuMPAnalyzer
         public static Stopwatch CurStopWatch = new Stopwatch();
         public static string StopWatchSyntax = "!sw";
 
-
-
         public void NewMessage(MessageCreateEventArgs input)
         {
             if (input.Message.Author == Program._DClient.CurrentUser || input.Message == null) return;
@@ -213,6 +211,7 @@ namespace Discord_OsuMPAnalyzer
                     break;
             }
         }
+
         public void CommandAdmin(string arg, string input, MessageCreateEventArgs e)
         {
             switch (arg.ToLower())
@@ -245,6 +244,7 @@ namespace Discord_OsuMPAnalyzer
                     #endregion
             }
         }
+
         public void CommandDeveloper(string arg, string input, MessageCreateEventArgs e)
         {
             switch (arg.ToLower())
