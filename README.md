@@ -11,5 +11,5 @@ Nuget:
 Made for GottaAimFast
 
 
-
+Update Status: Not Updated yet (probably in a few days there will be an update)
 Status: ready to use
