@@ -23,10 +23,16 @@ namespace GAFBot.MessageSystem
             Program.SaveEvent += () => SaveUsers(Program.UserFile);
         }
         
+        /// <summary>
+        /// DiscordUserId, User
+        /// </summary>
         public ConcurrentDictionary<ulong, User> Users { get; private set; }
         public Logger Logger { get { return Program.Logger; } }
 
-
+        /// <summary>
+        /// Invoked if there is a new message on discord
+        /// </summary>
+        /// <param name="messageArgs"></param>
         public void NewMessage(MessageCreateEventArgs messageArgs)
         {
             Task.Run(() =>
@@ -48,6 +54,10 @@ namespace GAFBot.MessageSystem
             });
         }
 
+        /// <summary>
+        /// Invoked when a user joins the guild
+        /// </summary>
+        /// <param name="args"></param>
         public void OnUserJoinedGuild(GuildMemberAddEventArgs args)
         {
             Logger.Log($"User joined guild: {args.Member.Id} {args.Member.DisplayName}");
@@ -64,22 +74,41 @@ namespace GAFBot.MessageSystem
             }
         }
 
+        /// <summary>
+        /// Invoked when a user leaves/get kicked/banned from the guild
+        /// </summary>
+        /// <param name="args"></param>
         public void OnMemberRemoved(GuildMemberRemoveEventArgs args)
         {
             Logger.Log($"User removed from guild: {args.Member.Id} {args.Member.DisplayName}");
         }
 
+        /// <summary>
+        /// Gets the access level for the user
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
         public AccessLevel GetAccessLevel(ulong user)
             => Users.ContainsKey(user) ? Users[user].AccessLevel : AccessLevel.User;
 
         public delegate void MatchEndDel(string teamA, string teamB, string winningTeam);
         public static event MatchEndDel OnMatchEnd;
 
+        /// <summary>
+        /// fake triggers a match end to the betting handler
+        /// </summary>
+        /// <param name="teama"></param>
+        /// <param name="teamb"></param>
+        /// <param name="winningteam"></param>
         public void FakeTrigger(string teama, string teamb, string winningteam)
         {
             OnMatchEnd(teama, teamb, winningteam);
         }
 
+        /// <summary>
+        /// starts the osu mp analyzer
+        /// </summary>
+        /// <param name="args"></param>
         public void StartAnalyzer(MessageCreateEventArgs args)
         {
             Task.Run(() =>
@@ -214,6 +243,11 @@ namespace GAFBot.MessageSystem
             });
         }
 
+        /// <summary>
+        /// registers a new user
+        /// </summary>
+        /// <param name="duser"></param>
+        /// <param name="guildId"></param>
         public void Register(DiscordUser duser, ulong guildId = 0)
         {
             Logger.Log("Trying to register new user " + duser.Username, showConsole: Program.Config.Debug);
@@ -251,7 +285,11 @@ namespace GAFBot.MessageSystem
 
             Logger.Log("User registered", showConsole: Program.Config.Debug);
         }
-        
+
+        /// <summary>
+        /// Loads users
+        /// </summary>
+        /// <param name="file"></param>
         public void LoadUsers(string file)
         {
             bool save = false;
@@ -283,6 +321,11 @@ namespace GAFBot.MessageSystem
             if (save)
                 SaveUsers(file);
         }
+
+        /// <summary>
+        /// Save users
+        /// </summary>
+        /// <param name="file"></param>
 
         public void SaveUsers(string file)
         {

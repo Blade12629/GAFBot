@@ -43,8 +43,17 @@ namespace GAFBot
 
         static System.Timers.Timer _saveTimer;
 
+        /// <summary>
+        /// Invoked by autosave (<see cref="StartSaveTimer"/>) and <see cref="ExitEvent"/>
+        /// </summary>
         public static event Action SaveEvent;
+        /// <summary>
+        /// Invoked on program start
+        /// </summary>
         public static event Action LoadEvent;
+        /// <summary>
+        /// Invoked on program exit
+        /// </summary>
         public static event Action ExitEvent;
 
         public static Config Config { get; set; }
@@ -118,6 +127,7 @@ namespace GAFBot
 
             await Task.Delay(-1);
         }
+
         /// <summary>
         /// Initializes the Verification
         /// </summary>
@@ -133,10 +143,10 @@ namespace GAFBot
             if (System.IO.File.Exists(VerificationFile))
                 VerificationHandler.Load(VerificationFile);
         }
+
         /// <summary>
         /// Initializes the MessageSystem
         /// </summary>
-
         public static void LoadMessageSystem()
         {
             Logger.Log("Initializing messagehandler");
@@ -146,10 +156,10 @@ namespace GAFBot
             if (System.IO.File.Exists(UserFile))
                 MessageHandler.LoadUsers(UserFile);
         }
+
         /// <summary>
         /// Initializes Discord
         /// </summary>
-
         public static void LoadDiscord()
         {
             Logger.Log("Initializing discord");
@@ -187,10 +197,10 @@ namespace GAFBot
             };
             Logger.Log("Discord client initialized");
         }
+
         /// <summary>
         /// Initializes the SaveTimer
         /// </summary>
-
         public static void StartSaveTimer()
         {
             if (_saveTimer != null)
@@ -204,16 +214,16 @@ namespace GAFBot
             _saveTimer.Elapsed += SaveTimerTick;
             _saveTimer.Start();
         }
+
         /// <summary>
         /// Invokes <see cref="SaveEvent"/>
         /// </summary>
-
         public static void SaveTimerTick(object sender, ElapsedEventArgs arg)
             => SaveEvent();
+
         /// <summary>
         /// Initializes the Config
         /// </summary>
-
         public static void LoadConfig(bool reload = false)
         {
             Console.WriteLine("Loading config");
@@ -289,6 +299,11 @@ namespace GAFBot
             CTRL_SHUTDOWN_EVENT = 6
         }
 
+        /// <summary>
+        /// Invoked on console exit
+        /// </summary>
+        /// <param name="sig"></param>
+        /// <returns></returns>
         static bool Handler(CtrlType sig)
         {
             switch (sig)

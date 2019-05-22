@@ -36,6 +36,11 @@ namespace GAFBot.Verification.Osu
             Program.SaveEvent += () => Save(Program.VerificationFile);
         }
         
+        /// <summary>
+        /// Starts the verification process
+        /// </summary>
+        /// <param name="duserid"></param>
+        /// <returns></returns>
         public (string, string) StartVerification(ulong duserid)
         {
             if (duserid == 0)
@@ -66,12 +71,18 @@ namespace GAFBot.Verification.Osu
 
             return (verificationStr, verificationStrEz);
         }
+
         /// <summary>
         /// dUserId, osuUserName, code, codeEz
         /// </summary>
         public event Action<ulong, string, string> OnVerificationStart;
         public event Action<ulong, string> OnVerified;
 
+        /// <summary>
+        /// Setup the verification handler
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="password"></param>
         public void Setup(string user, string password)
         {
             if (Debug)
@@ -88,6 +99,11 @@ namespace GAFBot.Verification.Osu
             _client.Closed += (sender, arg) => Logger.Log("IrcConnection closed");
         }
 
+        /// <summary>
+        /// Invoked if there is a new irc message
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void _client_GotMessage(object sender, NetIrc2.Events.ChatMessageEventArgs e)
         {
             string hostname = e.Sender.Hostname;
@@ -117,6 +133,11 @@ namespace GAFBot.Verification.Osu
             }
         }
 
+        /// <summary>
+        /// Invoked to verify the user after the verification process started or to instantly verify
+        /// </summary>
+        /// <param name="duserId"></param>
+        /// <param name="osuUserName"></param>
         public void VerifyUser(ulong duserId, string osuUserName)
         {
             try
@@ -171,6 +192,66 @@ namespace GAFBot.Verification.Osu
             }
         }
 
+        /// <summary>
+        /// Checks if the user is verified
+        /// </summary>
+        /// <param name="duserId"></param>
+        /// <returns></returns>
+        public bool IsUserVerified(ulong duserId)
+        {
+            User user = Program.MessageHandler.Users[duserId];
+
+            if (user != null)
+                return user.Verified;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the user is verified
+        /// </summary>
+        /// <param name="duserId"></param>
+        /// <returns></returns>
+        public bool IsUserVerified(string osuUsername)
+        {
+            User user = Program.MessageHandler.Users.Values.ToList().Find(u => u.OsuUserName.Equals(osuUsername, StringComparison.CurrentCultureIgnoreCase));
+
+            if (user != null)
+                return user.Verified;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the user can bypass the verification process
+        /// </summary>
+        /// <param name="duserId"></param>
+        /// <returns></returns>
+        public bool CanBypass(ulong duserId)
+            => CanBypass(duserId, Program.Config.DiscordGuildId);
+
+        /// <summary>
+        /// Checks if the user can bypass the verification process
+        /// </summary>
+        /// <param name="duserId"></param>
+        /// <returns></returns>
+        public bool CanBypass(ulong duserId, ulong guildId)
+        {
+            var dmember = Coding.Methods.GetMember(duserId, guildId);
+
+            if (Program.Config.DefaultDiscordAdmins != null && Program.Config.DefaultDiscordAdmins.Contains(duserId))
+                return true;
+            else
+                foreach (var drole in dmember.Roles)
+                    if (Program.Config.BypassVerification != null && Program.Config.BypassVerification.Contains(drole.Id))
+                        return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Starts the irc
+        /// </summary>
         public void IrcStart()
         {
             if (IsRunning)
@@ -189,6 +270,9 @@ namespace GAFBot.Verification.Osu
             Logger.Log("Sent Login data", showConsole: Debug);
         }
 
+        /// <summary>
+        /// Stops the irc
+        /// </summary>
         public void IrcStop()
         {
             if (!IsRunning)
@@ -202,6 +286,10 @@ namespace GAFBot.Verification.Osu
             IsRunning = false;
         }
 
+        /// <summary>
+        /// Loads active verifications
+        /// </summary>
+        /// <param name="file"></param>
         public void Load(string file)
         {
             string json = System.IO.File.ReadAllText(file);
@@ -214,6 +302,10 @@ namespace GAFBot.Verification.Osu
             }
         }
 
+        /// <summary>
+        /// Saves active verifications
+        /// </summary>
+        /// <param name="file"></param>
         public void Save(string file)
         {
             string json = "";

@@ -25,6 +25,11 @@ namespace GAFBot.Commands
                 Coding.Methods.SendMessage(e.ChannelID, "Usage: !infou discordUserId");
                 return;
             }
+            else if (e.AfterCMD.StartsWith("verifications"))
+            {
+                Coding.Methods.SendMessage(e.ChannelID, "Currently verified players: " + Program.MessageHandler.Users.Values.Count(u => u.Verified));
+                return;
+            }
             else if (!ulong.TryParse(e.AfterCMD, out userid))
             {
                 Coding.Methods.SendMessage(e.ChannelID, "Could not parse userid");

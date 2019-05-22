@@ -24,6 +24,9 @@ namespace GAFBot.Challonge.Api
             Participants = new List<Participant>();
         }
 
+        /// <summary>
+        /// Updates current cache
+        /// </summary>
         public void Update()
         {
             Program.Logger.Log($"Challonge: Checking for update", showConsole: Program.Config.Debug);
@@ -45,6 +48,9 @@ namespace GAFBot.Challonge.Api
             GetParticipants();
         }
 
+        /// <summary>
+        /// Updates current match cache
+        /// </summary>
         public void GetMatches()
         {
             Program.Logger.Log("Challonge: Loading matches", showConsole: Program.Config.Debug);
@@ -77,6 +83,9 @@ namespace GAFBot.Challonge.Api
             Program.Logger.Log("Challonge: Loaded matches", showConsole: Program.Config.Debug);
         }
 
+        /// <summary>
+        /// Updates current participant cache
+        /// </summary>
         public void GetParticipants()
         {
             Program.Logger.Log("Challonge: Loading participants", showConsole: Program.Config.Debug);
@@ -100,9 +109,15 @@ namespace GAFBot.Challonge.Api
             Program.Logger.Log("Challonge: Loaded participants", showConsole: Program.Config.Debug);
         }
 
+        /// <summary>
+        /// Gets a match from the match cache
+        /// </summary>
         public (MatchState, Match) GetMatch(int matchId, bool searchState = false, MatchState search = MatchState.Open)
             => Matches.Find(m => m.Item2.suggested_play_order == matchId);
 
+        /// <summary>
+        /// Gets a match from the match cache
+        /// </summary>
         public (MatchState, Match, int) GetMatch(string teamA, string teamB, bool searchState = false, MatchState search = MatchState.Open)
         {
             (Participant, Participant) teams = (GetParticipant(teamA), GetParticipant(teamB));
@@ -134,6 +149,9 @@ namespace GAFBot.Challonge.Api
             return (MatchState.Open, null, 0);
         }
 
+        /// <summary>
+        /// Gets a participant from the participant cache
+        /// </summary>
         public Participant GetParticipant(string team)
         {
             foreach (Participant participant in Participants)
@@ -144,6 +162,9 @@ namespace GAFBot.Challonge.Api
             return null;
         }
 
+        /// <summary>
+        /// Gets a matchstate from the match cache for a match
+        /// </summary>
         private MatchState GetState(Match match)
             => match.state.Equals("complete") ? MatchState.Closed : MatchState.Open;
 

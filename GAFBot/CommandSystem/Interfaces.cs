@@ -8,9 +8,24 @@ namespace GAFBot.Commands
 {
     public interface ICommandHandler
     {
+        /// <summary>
+        /// Activates a commands
+        /// </summary>
         bool ActivateCommand(DSharpPlus.Entities.DiscordMessage message, AccessLevel access);
+
+        /// <summary>
+        /// Loads commands
+        /// </summary>
         void LoadCommands();
+
+        /// <summary>
+        /// Registers a commands
+        /// </summary>
         bool Register(ICommand command);
+
+        /// <summary>
+        /// Unregisters a commands
+        /// </summary>
         bool Unregister(ICommand command);
     }
 
@@ -19,6 +34,10 @@ namespace GAFBot.Commands
         char Activator { get; }
         string CMD { get; }
         AccessLevel AccessLevel { get; }
+        /// <summary>
+        /// Activates the command
+        /// </summary>
+        /// <param name="e"></param>
         void Activate(CommandEventArg e);
     }
 

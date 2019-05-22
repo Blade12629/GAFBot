@@ -11,6 +11,9 @@ namespace GAFBot.Osu.Api
         private static string API_URL = "https://osu.ppy.sh/api/";
 
         // Parameters: k* api key, mp* matchid | * = required
+        /// <summary>
+        /// Gets a match from the api
+        /// </summary>
         public static Json_Get_Match GetMatch(int matchId)
         {
             if (matchId <= 0) return null;
@@ -26,6 +29,9 @@ namespace GAFBot.Osu.Api
         }
 
         // Parameters: k* api key, u* userid/username, m mode (0 = osu!, 1 = Taiko, 2 = CtB, 3 = osu!mania) (default: 0), type* UseName/UseID (string, id) (preferred: UseID) , event_days (1-31)
+        /// <summary>
+        /// Gets a user from the api
+        /// </summary>
         public static Json_Get_User GetUser(int user, int mode = 0, string type = "id", int event_days = 1)
         {
             string jsonInput = "";
@@ -40,6 +46,9 @@ namespace GAFBot.Osu.Api
             return WriteJson(jsonInput, new Json_Get_User()) as Json_Get_User;
         }
 
+        /// <summary>
+        /// Gets a beatmap from the api
+        /// </summary>
         public static Json_Get_Beatmap Get_BeatMap(int bBeatmap_id = 0, GameModeEnum mMode = GameModeEnum.standard, int aConvertedMaps = 1, int limitSearchLimit = 30)
         {
             string jsonInput = "";
@@ -53,7 +62,10 @@ namespace GAFBot.Osu.Api
 
             return WriteJson(jsonInput, new Json_Get_Beatmap()) as Json_Get_Beatmap;
         }
-        
+
+        /// <summary>
+        /// writes a json to <see cref="T"/>
+        /// </summary>
         private static Object WriteJson<T>(string JsonInput, T Format)
         {
             List<string> NJsonErrors = new List<string>();

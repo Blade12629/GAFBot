@@ -17,6 +17,9 @@ namespace GAFBot.MessageSystem
             _threadQueue = new ConcurrentQueue<Action>();
         }
 
+        /// <summary>
+        /// Initializes the logger
+        /// </summary>
         public void Initialize()
         {
             Threadpublic = new Thread(new ThreadStart(() => Thread_Start(File)))
@@ -37,6 +40,10 @@ namespace GAFBot.MessageSystem
         /// </summary>
         private bool _threadShouldDispose;
 
+        /// <summary>
+        /// starts the logger thread
+        /// </summary>
+        /// <param name="file"></param>
         private void Thread_Start(string file)
         {
             try
@@ -73,16 +80,33 @@ namespace GAFBot.MessageSystem
             }
         }
         
+        /// <summary>
+        /// Writes a line to a text file
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="line"></param>
         public void FileWriteLine(string file, string line)
         {
             System.IO.File.AppendAllText(file, line + Environment.NewLine);
         }
 
+        /// <summary>
+        /// Insert new message to log
+        /// </summary>
+        /// <param name="line"></param>
         public void Insert(string line)
         {
             _threadQueue.Enqueue(new Action(() => FileWriteLine(File, line)));
         }
 
+        /// <summary>
+        /// Inserts new message to log with a format and options
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="addDate"></param>
+        /// <param name="addNewLineAtEnd"></param>
+        /// <param name="showConsole"></param>
+        /// <param name="logToFile"></param>
         public void Log(string line, bool addDate = true, bool addNewLineAtEnd = true, bool showConsole = true, bool logToFile = true)
         {
             Task.Run(() =>

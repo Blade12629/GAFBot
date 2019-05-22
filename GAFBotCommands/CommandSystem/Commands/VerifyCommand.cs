@@ -24,37 +24,31 @@ namespace GAFBot.Commands
             try
             {
                 var dclient = Coding.Methods.GetClient();
-                var duser = dclient.GetUserAsync(e.DUserID).Result;
-                var privChannel = dclient.CreateDmAsync(duser).Result;
-                var dguild = dclient.Guilds.First(g => g.Key == Program.Config.DiscordGuildId).Value;
-                var dchannel = dguild.GetChannel(e.ChannelID);
-                var member = dguild.GetMemberAsync(e.DUserID).Result;
+                var privChannel = Coding.Methods.GetPrivChannel(e.DUserID);
+                var dchannel = Coding.Methods.GetChannel(e.ChannelID);
 
                 User user = null;
                 while (!Program.MessageHandler.Users.TryGetValue(e.DUserID, out user))
                     System.Threading.Tasks.Task.Delay(5).Wait();
-
-                if (user != null && user.Verified)
+                
+                if (Program.VerificationHandler.IsUserVerified(e.DUserID))
                 {
                     Coding.Methods.SendMessage(e.ChannelID, $"You already have been Verified (osu: {user.OsuUserName})");
                     return;
                 }
                 
-                if (Program.Config.BypassVerification.Length > 0)
+                if (Program.VerificationHandler.CanBypass(e.DUserID))
                 {
-                    foreach (var drole in member.Roles)
+                    if (string.IsNullOrEmpty(e.AfterCMD))
                     {
-                        if (Program.Config.BypassVerification.Contains(drole.Id) && string.IsNullOrEmpty(e.AfterCMD))
-                        {
-                            Coding.Methods.SendMessage(e.ChannelID, "Due to bypass settings you only need to set your account, please type: !verify Your_Osu_Account_Name");
-                            return;
-                        }
-                        else if (Program.Config.BypassVerification.Contains(drole.Id) && !string.IsNullOrEmpty(e.AfterCMD))
-                        {
-                            VerificationHandler.VerifyUser(e.DUserID, e.AfterCMD);
-                            Coding.Methods.SendMessage(e.ChannelID, "Your osu account has been confirmed due to current bypass settings");
-                            return;
-                        }
+                        Coding.Methods.SendMessage(e.ChannelID, "Due to bypass settings you only need to set your account, please type: !verify Your_Osu_Account_Name");
+                        return;
+                    }
+                    else
+                    {
+                        VerificationHandler.VerifyUser(e.DUserID, e.AfterCMD);
+                        Coding.Methods.SendMessage(e.ChannelID, "Your osu account has been confirmed due to current bypass settings");
+                        return;
                     }
                 }
                 

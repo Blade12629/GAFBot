@@ -9,6 +9,9 @@ namespace GAFBot.Osu
 {
     public class Analyzer
     {
+        /// <summary>
+        /// Creates a qualifier statistic for a osu mp match
+        /// </summary>
         public QualifierStageResult CreateQualifierStatistics(HistoryJson.History history)
         {
             var HighestScoreRankingResult = CalculateHighestRankingAndPlayCount(GetData.GetMatches(history), history);
@@ -28,6 +31,9 @@ namespace GAFBot.Osu
             return result;
         }
 
+        /// <summary>
+        /// Creates a statistic for a osu mp match
+        /// </summary>
         public AnalyzerResult CreateStatistic(HistoryJson.History history)
         {
             AnalyzerResult result = null;
@@ -81,6 +87,9 @@ namespace GAFBot.Osu
             return result;
         }
 
+        /// <summary>
+        /// parses a osu mp match
+        /// </summary>
         public HistoryJson.History ParseMatch(string matchIdString)
         {
             const string historyUrl = "https://osu.ppy.sh/community/matches/";
@@ -129,7 +138,10 @@ namespace GAFBot.Osu
 
             return historyJson;
         }
-        
+
+        /// <summary>
+        /// Gets osu mp match team names
+        /// </summary>
         public (string, string) GetVersusTeamNames(string matchName)
         {
             string[] MatchNameSplit = matchName.Split(' ');
@@ -152,7 +164,7 @@ namespace GAFBot.Osu
         }
 
         /// <summary>
-        /// 
+        /// calculates the highest ranking players and beatmap play counts
         /// </summary>
         /// <param name="games"><see cref="GetData.GetMatches(HistoryJson.History)"/></param>
         /// <returns>Tuple { Tuple { HighestScore, HighestScoreBeatmap, HighestScoreRanking }[], BeatmapPlayCount } }</returns>
@@ -264,7 +276,7 @@ namespace GAFBot.Osu
         }
 
         /// <summary>
-        /// 
+        /// Gets team wins
         /// </summary>
         /// <param name="games">games to analyze</param>
         /// <returns><see cref="Tuple{T1, T2}"/> [RedTeamWins, BlueTeamWins]</returns>

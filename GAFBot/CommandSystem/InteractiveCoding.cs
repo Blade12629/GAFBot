@@ -302,7 +302,7 @@ namespace GAFBot
                 => Program.Client;
 
             public static DSharpPlus.Entities.DiscordGuild GetGuild(ulong id)
-                => GetClient().GetGuildAsync(id).Result;
+                => GetClient().Guilds.ToList().Find(p => p.Key == id).Value;
 
             public static DSharpPlus.Entities.DiscordChannel GetChannel(ulong id)
                 => GetClient().GetChannelAsync(id).Result;
@@ -334,7 +334,7 @@ namespace GAFBot
                 {
                     Program.Logger.Log($"Assigning role {id} : {guildid} : {roleid} : {reason}", showConsole: Program.Config.Debug);
                     var client = GetClient();
-                    var guild = client.Guilds.First(g => g.Key == Program.Config.DiscordGuildId).Value;
+                    var guild = GetGuild(guildid);
                     var member = guild.GetMemberAsync(id).Result;
                     var role = guild.GetRole(roleid);
 

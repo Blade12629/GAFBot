@@ -24,6 +24,9 @@ namespace GAFBot.Gambling.Betting
             MessageHandler.OnMatchEnd += (teamA, teamB, winningTeam) => ResolveBets(teamA, teamB, winningTeam);
         }
 
+        /// <summary>
+        /// Checks if there is a bet already active
+        /// </summary>
         public bool ContainsBet(Bet b)
         {
             if (ActiveBets.Find(bt => bt.MatchId == b.MatchId && bt.DiscordUserId == b.DiscordUserId) != null)
@@ -31,9 +34,15 @@ namespace GAFBot.Gambling.Betting
             return false;
         }
 
+        /// <summary>
+        /// Checks if there is a bet already active
+        /// </summary>
         public bool ContainsBet(int matchId, ulong discordUserId)
             => ContainsBet(new Bet("null", matchId, discordUserId));
 
+        /// <summary>
+        /// Adds a bet to the active bets
+        /// </summary>
         public void AddBet(string team, int matchId, ulong discordUserId, ulong channelId)
         {
             Program.Logger.Log($"Betting: Adding bet ({discordUserId}, {matchId}, {team ?? "null"}) (Channel {channelId})", showConsole: Program.Config.Debug);
@@ -43,6 +52,9 @@ namespace GAFBot.Gambling.Betting
             AddBet(b, channelId);
         }
 
+        /// <summary>
+        /// Adds a bet to the active bets
+        /// </summary>
         public void AddBet(Bet b, ulong channelId)
         {
             Program.Logger.Log($"Betting: Adding bet ({b.DiscordUserId}, {b.MatchId}, {b.Team ?? "null"}) (Channel {channelId})", showConsole: Program.Config.Debug);
@@ -64,18 +76,27 @@ namespace GAFBot.Gambling.Betting
             }
         }
 
+        /// <summary>
+        /// Removes a bet from the active bets
+        /// </summary>
         public void RemoveBets(ulong discordUserId)
         {
             Program.Logger.Log($"Betting: Removing all bets by user " + discordUserId, showConsole: Program.Config.Debug);
             ActiveBets.RemoveAll(b => b.DiscordUserId == discordUserId);
         }
 
+        /// <summary>
+        /// Removes a bet from the active bets
+        /// </summary>
         public void RemoveBet(int matchId, ulong discordUserId)
         {
             Program.Logger.Log($"Betting: Removing all bets by matchId {matchId} and user {discordUserId} ", showConsole: Program.Config.Debug);
             ActiveBets.RemoveAll(b => b.DiscordUserId == discordUserId);
         }
 
+        /// <summary>
+        /// Resolves all bets that meet the team and winningTeam condition (challonge)
+        /// </summary>
         public void ResolveBets(string teamA, string teamB, string winningTeam)
         {
             Program.Logger.Log($"Betting: Resolving bets {teamA}, {teamB}, {winningTeam}", showConsole: Program.Config.Debug);
@@ -113,6 +134,9 @@ namespace GAFBot.Gambling.Betting
             }
         }
 
+        /// <summary>
+        /// Resolves all bets that meet the team and winningTeam condition (challonge)
+        /// </summary>
         public void ResolveBets(string team, int matchId)
         {
             Program.Logger.Log($"Betting: Resolving Bets {team}, {matchId}", showConsole: Program.Config.Debug);
@@ -128,6 +152,9 @@ namespace GAFBot.Gambling.Betting
             }
         }
 
+        /// <summary>
+        /// Invoked if a bet is won
+        /// </summary>
         private void BetWin(Bet b)
         {
             User user = Program.MessageHandler.Users[b.DiscordUserId];
@@ -139,6 +166,9 @@ namespace GAFBot.Gambling.Betting
             privChannel.SendMessageAsync($"You won your bet and recieved {CurrentReward} points (Team: {b.Team}, MatchId: {b.MatchId})").Wait();
         }
 
+        /// <summary>
+        /// Saves the bets
+        /// </summary>
         public void Save()
         {
             Program.Logger.Log($"Betting: Saving bets", showConsole: Program.Config.Debug);
@@ -152,6 +182,9 @@ namespace GAFBot.Gambling.Betting
             Program.Logger.Log($"Betting: Bets saved", showConsole: Program.Config.Debug);
         }
 
+        /// <summary>
+        /// Loads the bets
+        /// </summary>
         public void Load()
         {
             Program.Logger.Log($"Betting: Loading bets", showConsole: Program.Config.Debug);

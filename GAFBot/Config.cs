@@ -38,6 +38,11 @@ namespace GAFBot
         public ulong VerifiedRoleId { get; set; }
         public string BettingFile { get; set; }
 
+        /// <summary>
+        /// Loads the config
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
         public static Config LoadConfig(string file)
         {
             Config config = GetDefault();
@@ -54,6 +59,10 @@ namespace GAFBot
             return config;
         }
 
+        /// <summary>
+        /// Gets a default config file (not ready for use!). use this to save the config if you have none
+        /// </summary>
+        /// <returns></returns>
         public static Config GetDefault()
             => new Config()
                 {
@@ -81,6 +90,11 @@ namespace GAFBot
                     BettingFile = @"\betting.json"
                 };
 
+        /// <summary>
+        /// Saves the config
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="config"></param>
         public static void SaveConfig(string file, Config config)
         {
             string json = JsonConvert.SerializeObject(config, Formatting.Indented);
