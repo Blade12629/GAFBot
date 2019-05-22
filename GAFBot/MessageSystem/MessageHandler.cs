@@ -37,7 +37,7 @@ namespace GAFBot.MessageSystem
         {
             Task.Run(() =>
             {
-                Logger.Log($"New message: User: {messageArgs.Author.Username}: {messageArgs.Message.Content}");
+                Logger.Log($"MessageHandler: New message: User: {messageArgs.Author.Username}: {messageArgs.Message.Content}");
                 Register(messageArgs.Author);
 
                 User user = Users[messageArgs.Author.Id];
@@ -60,7 +60,7 @@ namespace GAFBot.MessageSystem
         /// <param name="args"></param>
         public void OnUserJoinedGuild(GuildMemberAddEventArgs args)
         {
-            Logger.Log($"User joined guild: {args.Member.Id} {args.Member.DisplayName}");
+            Logger.Log($"MessageHandler: User joined guild: {args.Member.Id} {args.Member.DisplayName}");
 
             if (Users.ContainsKey(args.Member.Id))
             {
@@ -80,7 +80,7 @@ namespace GAFBot.MessageSystem
         /// <param name="args"></param>
         public void OnMemberRemoved(GuildMemberRemoveEventArgs args)
         {
-            Logger.Log($"User removed from guild: {args.Member.Id} {args.Member.DisplayName}");
+            Logger.Log($"MessageHandler: User removed from guild: {args.Member.Id} {args.Member.DisplayName}");
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace GAFBot.MessageSystem
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log(ex.ToString());
+                    Logger.Log("MessageHandler: " + ex.ToString());
                 }
             });
         }
@@ -250,10 +250,10 @@ namespace GAFBot.MessageSystem
         /// <param name="guildId"></param>
         public void Register(DiscordUser duser, ulong guildId = 0)
         {
-            Logger.Log("Trying to register new user " + duser.Username, showConsole: Program.Config.Debug);
+            Logger.Log("MessageHandler: Trying to register new user " + duser.Username, showConsole: Program.Config.Debug);
             if (Users.ContainsKey(duser.Id))
             {
-                Logger.Log("User already registered " + duser.Username, showConsole: Program.Config.Debug);
+                Logger.Log("MessageHandler: User already registered " + duser.Username, showConsole: Program.Config.Debug);
                 return;
             }
             bool autoVerify = false;
@@ -283,7 +283,7 @@ namespace GAFBot.MessageSystem
             while (!Users.TryAdd(duser.Id, user))
                 Task.Delay(5);
 
-            Logger.Log("User registered", showConsole: Program.Config.Debug);
+            Logger.Log("MessageHandler: User registered", showConsole: Program.Config.Debug);
         }
 
         /// <summary>

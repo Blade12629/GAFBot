@@ -86,17 +86,17 @@ namespace GAFBot.Verification.Osu
         public void Setup(string user, string password)
         {
             if (Debug)
-                Logger.Log("Setting up irc client");
+                Logger.Log("VerificationHandler: Setting up irc client");
 
             _user = user;
             _password = password;
 
             _client = new IrcClient();
-            _client.Connected += (sender, arg) => Logger.Log("IrcConnected");
+            _client.Connected += (sender, arg) => Logger.Log("VerificationHandler: IrcConnected");
             _client.GotMessage += _client_GotMessage;
-            _client.GotIrcError += (sender, arg) => Logger.Log($"IrcError: {arg.Error}: {arg.Data}", showConsole: Debug);
-            _client.GotWelcomeMessage += (sender, arg) => Logger.Log($"IrcGotWelcomeMessage: {arg.Message}");
-            _client.Closed += (sender, arg) => Logger.Log("IrcConnection closed");
+            _client.GotIrcError += (sender, arg) => Logger.Log($"VerificationHandler: IrcError: {arg.Error}: {arg.Data}", showConsole: Debug);
+            _client.GotWelcomeMessage += (sender, arg) => Logger.Log($"VerificationHandler: IrcGotWelcomeMessage: {arg.Message}");
+            _client.Closed += (sender, arg) => Logger.Log("VerificationHandler: IrcConnection closed");
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace GAFBot.Verification.Osu
         {
             string hostname = e.Sender.Hostname;
             string userName = e.Sender.Nickname;
-            Logger.Log($"New Message: from {userName} {hostname} to {e.Recipient}: {e.Message}", showConsole: Debug);
+            Logger.Log($"VerificationHandler: New Message: from {userName} {hostname} to {e.Recipient}: {e.Message}", showConsole: Debug);
 
             if (!e.Recipient.ToString().StartsWith("Skyfly") || !e.Message.ToString().StartsWith("!verify"))
                 return;
@@ -116,7 +116,7 @@ namespace GAFBot.Verification.Osu
             string verifyStr = e.Message.ToString().Remove(0, "!verify ".Length);
             ulong userId = 0;
 
-            Logger.Log($"Looking for userid for code: {verifyStr} full string: {e.Message.ToString()}", showConsole: Debug);
+            Logger.Log($"VerificationHandler: Looking for userid for code: {verifyStr} full string: {e.Message.ToString()}", showConsole: Debug);
 
             lock(ActiveVerifications)
             {
@@ -124,12 +124,12 @@ namespace GAFBot.Verification.Osu
                 userId = ActiveVerifications.Keys.ElementAt(indexOf);
             }
 
-            Logger.Log("Found userid: " + userId, showConsole: Debug);
+            Logger.Log("VerificationHandler: Found userid: " + userId, showConsole: Debug);
 
             if (userId > 0)
             {
                 VerifyUser(userId, userName);
-                Logger.Log($"Verified user {userId} {userName}", showConsole: Debug);
+                Logger.Log($"VerificationHandler: Verified user {userId} {userName}", showConsole: Debug);
             }
         }
 
@@ -142,7 +142,7 @@ namespace GAFBot.Verification.Osu
         {
             try
             {
-                Logger.Log("Verifying user " + duserId + " | " + osuUserName, showConsole: Debug);
+                Logger.Log("VerificationHandler: Verifying user " + duserId + " | " + osuUserName, showConsole: Debug);
 
                 List<User> currentUsers = null;
 
@@ -188,7 +188,7 @@ namespace GAFBot.Verification.Osu
                 //Skyfly
                 var priv = Coding.Methods.GetPrivChannel(Program.Config.DefaultDiscordAdmins[0]);
                 priv.SendMessageAsync("Use caused exception" + Environment.NewLine + ex.ToString());
-                Logger.Log(ex.ToString(), showConsole: Debug);
+                Logger.Log("VerificationHandler: " + ex.ToString(), showConsole: Debug);
             }
         }
 
@@ -257,7 +257,7 @@ namespace GAFBot.Verification.Osu
             if (IsRunning)
                 return;
             
-            Logger.Log("Starting irc", showConsole: Debug);
+            Logger.Log("VerificationHandler: Starting irc", showConsole: Debug);
 
             IsRunning = true;
 
@@ -267,7 +267,7 @@ namespace GAFBot.Verification.Osu
                 Task.Delay(5).Wait();
             _client.IrcCommand(new IrcString($"PASS"), new IrcString(_password));
             _client.IrcCommand(new IrcString($"NICK"), new IrcString(_user));
-            Logger.Log("Sent Login data", showConsole: Debug);
+            Logger.Log("VerificationHandler: Sent Login data", showConsole: Debug);
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace GAFBot.Verification.Osu
                 return;
 
             if (Debug)
-                Logger.Log("Stopping irc");
+                Logger.Log("VerificationHandler: Stopping irc");
 
             _client.Close();
 

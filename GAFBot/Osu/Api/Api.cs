@@ -85,9 +85,7 @@ namespace GAFBot.Osu.Api
             }
             catch (Exception ex)
             {
-                foreach (string s in NJsonErrors) Console.WriteLine("{0}Error at WriteJson {1} -->> {2}{3}", Environment.NewLine, DateTime.UtcNow, s, Environment.NewLine);
-                Console.WriteLine("{0} -->> {1}", DateTime.UtcNow, ex);
-                Console.WriteLine("---------------------------------------------------");
+                Program.Logger.Log("OsuApi: " + ex.ToString(), showConsole: Program.Config.Debug);
                 return null;
             }
         }

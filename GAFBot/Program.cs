@@ -87,7 +87,7 @@ namespace GAFBot
             {
                 LoadDiscord();
                 LoadMessageSystem();
-                Logger.Log("Loading Commands");
+                Logger.Log("Program: Loading Commands");
                 LoadCommands();
                 LoadVerification();
                 LoadChallonge();
@@ -100,27 +100,26 @@ namespace GAFBot
             try
             {
                 LoadConfig();
-                Config.ChallongeTournamentName = "GAF2vs2Edition2018";
 
                 Logger = new MessageSystem.Logger(LogFile);
                 Logger.Initialize();
 
                 LoadEvent();
 
-                Logger.Log("Starting AutoSaveTimer");
+                Logger.Log("Program: Starting AutoSaveTimer");
                 StartSaveTimer();
 
-                Logger.Log("Connecting discord client");
+                Logger.Log("Program: Connecting discord client");
                 await Client.ConnectAsync();
 
-                Logger.Log("GAF Bot initialized");
+                Logger.Log("Program: GAF Bot initialized");
                 _ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
                 _ewh.WaitOne();
             }
             catch (Exception ex)
             {
                 if (Logger != null)
-                    Logger.Log(ex.ToString(), showConsole: Config.Debug);
+                    Logger.Log("Program: " + ex.ToString(), showConsole: Config.Debug);
                 else
                     Console.WriteLine(ex);
             }
@@ -133,11 +132,11 @@ namespace GAFBot
         /// </summary>
         public static void LoadVerification()
         {
-            Logger.Log("Initializing Osu irc");
+            Logger.Log("Program: Initializing Osu irc");
             VerificationHandler = new Verification.Osu.VerificationHandler(Config.Debug);
             VerificationHandler.Setup(Config.IrcUser, Config.IrcPass);
-            VerificationHandler.OnVerificationStart += (id, key, keyez) => Logger.Log($"Verification started with: {id} {key} {keyez}");
-            VerificationHandler.OnVerified += (id, osu) => Logger.Log($"User verified: {id} {osu}");
+            VerificationHandler.OnVerificationStart += (id, key, keyez) => Logger.Log($"Program: Verification started with: {id} {key} {keyez}");
+            VerificationHandler.OnVerified += (id, osu) => Logger.Log($"Program: User verified: {id} {osu}");
             VerificationHandler.IrcStart();
 
             if (System.IO.File.Exists(VerificationFile))
@@ -149,10 +148,10 @@ namespace GAFBot
         /// </summary>
         public static void LoadMessageSystem()
         {
-            Logger.Log("Initializing messagehandler");
+            Logger.Log("Program: Initializing messagehandler");
             MessageHandler = new MessageSystem.MessageHandler();
 
-            Logger.Log("loading users");
+            Logger.Log("Program: loading users");
             if (System.IO.File.Exists(UserFile))
                 MessageHandler.LoadUsers(UserFile);
         }
@@ -162,7 +161,7 @@ namespace GAFBot
         /// </summary>
         public static void LoadDiscord()
         {
-            Logger.Log("Initializing discord");
+            Logger.Log("Program: Initializing discord");
             Client = new DiscordClient(new DiscordConfiguration()
             {
                 Token = Config.DiscordClientSecret,
@@ -171,11 +170,11 @@ namespace GAFBot
 
             Client.ClientErrored += async (arg) =>
             {
-                await Task.Run(() => Logger.Log(arg.Exception.ToString()));
+                await Task.Run(() => Logger.Log("Program: " + arg.Exception.ToString()));
             };
             Client.GuildAvailable += async (arg) =>
             {
-                await Task.Run(() => Logger.Log($"New guild available: {arg.Guild.Id} {arg.Guild.Name}"));
+                await Task.Run(() => Logger.Log($"Program: New guild available: {arg.Guild.Id} {arg.Guild.Name}"));
                 _ewh.Set();
             };
             Client.MessageCreated += async (arg) =>
@@ -185,7 +184,7 @@ namespace GAFBot
             };
             Client.Ready += async (arg) =>
             {
-                await Task.Run(() => Logger.Log("Discord client is now ready"));
+                await Task.Run(() => Logger.Log("Program: Discord client is now ready"));
             };
             Client.GuildMemberAdded += async (arg) =>
             {
@@ -195,7 +194,7 @@ namespace GAFBot
             {
                 await Task.Run(() =>  MessageHandler.OnMemberRemoved(arg));
             };
-            Logger.Log("Discord client initialized");
+            Logger.Log("Program: Discord client initialized");
         }
 
         /// <summary>
@@ -226,21 +225,21 @@ namespace GAFBot
         /// </summary>
         public static void LoadConfig(bool reload = false)
         {
-            Console.WriteLine("Loading config");
+            Console.WriteLine("Program: Loading config");
             Config = Config.LoadConfig(ConfigFile);
 
             if (!reload)
             {
                 if (!System.IO.File.Exists(ConfigFile))
                 {
-                    Console.WriteLine($"Did not find config file at {ConfigFile}");
+                    Console.WriteLine($"Program: Did not find config file at {ConfigFile}");
                     //LoadConfig gives us a default config, now we save it
                     Config.SaveConfig(ConfigFile, Config);
                     Environment.Exit(0);
                 }
             }
 
-            Console.WriteLine("Loaded config");
+            Console.WriteLine("Program: Loaded config");
         }
 
         /// <summary>
@@ -251,7 +250,7 @@ namespace GAFBot
             if (!File.Exists(CurrentPath + CurrentCommandAssemblyName))
                 return;
 
-            Logger.Log(CurrentCommandAssemblyName);
+            Logger.Log("Program: " + CurrentCommandAssemblyName);
 
             //using (MemoryStream mstream = new MemoryStream())
             //{

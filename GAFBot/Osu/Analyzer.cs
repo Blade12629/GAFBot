@@ -47,7 +47,6 @@ namespace GAFBot.Osu
                 Tuple<int, int> wins = GetWins(games);
                 TeamColor winningTeam = wins.Item1 > wins.Item2 ? TeamColor.Red : TeamColor.Blue;
                 TeamColor losingTeam = wins.Item1 < wins.Item2 ? TeamColor.Red : TeamColor.Blue;
-                Console.WriteLine();
 
                 result = new AnalyzerResult()
                 {
@@ -82,7 +81,7 @@ namespace GAFBot.Osu
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString());
+                Program.Logger.Log("Analyzer: " + ex.ToString());
             }
             return result;
         }

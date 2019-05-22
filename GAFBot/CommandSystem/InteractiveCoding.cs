@@ -133,7 +133,7 @@ namespace GAFBot
                                     Environment.NewLine);
                             }
 
-                            Console.WriteLine(ErrorText.ToString());
+                            Program.Logger.Log("Compiler: " + ErrorText.ToString(), showConsole: Program.Config.Debug);
                             #endregion
 
                         }
@@ -223,8 +223,8 @@ namespace GAFBot
 
                         if (!result.Success)
                         {
-                            Console.WriteLine("Error at compiling");
-                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Console.WriteLine("Diagnostic: " + diag.GetMessage()));
+                            Program.Logger.Log("Compiler: Error at compiling", showConsole: Program.Config.Debug);
+                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Program.Logger.Log("Compiler: " + diag.GetMessage(), showConsole: Program.Config.Debug)));
                             return new KeyValuePair<bool, object>(false, null);
                         }
 
@@ -243,7 +243,7 @@ namespace GAFBot
                 }
                 catch (Exception E)
                 {
-                    Console.WriteLine(E);
+                    Program.Logger.Log("Compiler: " + E.ToString(), showConsole: Program.Config.Debug);
                     if (ShowErrors)
                         return new KeyValuePair<bool, object>(false, E);
                 }
@@ -254,11 +254,12 @@ namespace GAFBot
         }
         public static class Methods
         {
-            public static void ConsoleLine(string Message)
-                => Console.WriteLine(Message);
+            public static void ConsoleLine(string Message)                    
+                => Program.Logger.Log(Message);
+
 
             public static void Log(string line, bool addDate = true, bool addNewLineAtEnd = true, bool showConsole = true, bool logToFile = true)
-                => Program.Logger.Log(line, addDate, addNewLineAtEnd, showConsole, logToFile);
+                => Program.Logger.Log("InteractiveCoding: " + line, addDate, addNewLineAtEnd, showConsole, logToFile);
 
             public static string GetProps(string beginsWith)
             {
@@ -291,7 +292,7 @@ namespace GAFBot
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    Program.Logger.Log("InteractiveCoding: " + ex.ToString(), showConsole: Program.Config.Debug);
                 }
             }
 
@@ -332,18 +333,18 @@ namespace GAFBot
             {
                 try
                 {
-                    Program.Logger.Log($"Assigning role {id} : {guildid} : {roleid} : {reason}", showConsole: Program.Config.Debug);
+                    Program.Logger.Log($"InteractiveCoding: Assigning role {id} : {guildid} : {roleid} : {reason}", showConsole: Program.Config.Debug);
                     var client = GetClient();
                     var guild = GetGuild(guildid);
                     var member = guild.GetMemberAsync(id).Result;
                     var role = guild.GetRole(roleid);
 
                     member.GrantRoleAsync(role, reason).Wait();
-                    Program.Logger.Log("Assigned role", showConsole: Program.Config.Debug);
+                    Program.Logger.Log("InteractiveCoding: Assigned role", showConsole: Program.Config.Debug);
                 }
                 catch (Exception ex)
                 {
-                    Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                    Program.Logger.Log("InteractiveCoding: " + ex.ToString(), showConsole: Program.Config.Debug);
 
                 }
             }

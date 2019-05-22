@@ -1,5 +1,4 @@
-﻿using GAFBot.CommandSystem;
-using GAFBot.MessageSystem;
+﻿using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 using System.Text;
