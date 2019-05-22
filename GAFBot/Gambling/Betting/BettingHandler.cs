@@ -143,7 +143,7 @@ namespace GAFBot.Gambling.Betting
         {
             Program.Logger.Log($"Betting: Saving bets", showConsole: Program.Config.Debug);
 
-            if (ActiveBets == null)
+            if (ActiveBets == null || ActiveBets.Count <= 0)
                 return;
 
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(ActiveBets.ToArray());

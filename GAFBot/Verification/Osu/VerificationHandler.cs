@@ -132,7 +132,7 @@ namespace GAFBot.Verification.Osu
 
                 if (currentUsers != null && currentUsers.Count > 0)
                 {
-                    if (currentUsers.Find(u => u.OsuUserName.Equals(osuUserName, StringComparison.CurrentCultureIgnoreCase)) != null)
+                    if (currentUsers.Find(u => !string.IsNullOrEmpty(u.OsuUserName) && u.OsuUserName.Equals(osuUserName, StringComparison.CurrentCultureIgnoreCase)) != null)
                     {
                         var privChannel = Coding.Methods.GetPrivChannel(duserId);
                         privChannel.SendMessageAsync("Your user account has already been linked to an discord account" + Environment.NewLine +
