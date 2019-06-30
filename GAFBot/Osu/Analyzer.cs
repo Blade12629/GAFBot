@@ -12,6 +12,7 @@ namespace GAFBot.Osu
         /// <summary>
         /// Creates a qualifier statistic for a osu mp match
         /// </summary>
+        [Obsolete]
         public QualifierStageResult CreateQualifierStatistics(HistoryJson.History history)
         {
             var HighestScoreRankingResult = CalculateHighestRankingAndPlayCount(GetData.GetMatches(history), history);
