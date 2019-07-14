@@ -11,6 +11,7 @@ namespace GAFBot
     {
         public string DiscordClientSecret { get; set; }
         public string OsuApiKey { get; set; }
+        public bool QualifierStage { get; set; }
         public int WarmupMatchCount { get; set; }
         public bool PickEmChallengeEnabled { get; set; }
         /*
@@ -36,12 +37,6 @@ namespace GAFBot
         public ulong DiscordGuildId { get; set; }
         public ulong VerifiedRoleId { get; set; }
         public string BettingFile { get; set; }
-        public string WelcomeMessage { get; set; }
-        public ulong WelcomeChannel { get; set; }
-        public int CurrentBettingReward { get; set; }
-        public ulong BetChannel { get; set; }
-        public ulong DevChannel { get; set; }
-        public ulong RefereeRoleId { get; set; }
 
         /// <summary>
         /// Loads the config
@@ -74,6 +69,7 @@ namespace GAFBot
                     DiscordClientSecret = "https://discordapp.com/developers/applications/YourApplicationID/bots",
                     OsuApiKey = "https://osu.ppy.sh/p/api/",
                     WarmupMatchCount = 2,
+                    QualifierStage = true,
                     PickEmChallengeEnabled = false,
                     IrcHost = "irc.ppy.sh",
                     AnalyzeChannel = 123456789,
@@ -91,8 +87,7 @@ namespace GAFBot
                     BypassVerification = new ulong[] { 123456789 },
                     VerifiedRoleId = 0,
                     DiscordGuildId = 0,
-                    BettingFile = @"\betting.json",
-                    CurrentBettingReward = 16
+                    BettingFile = @"\betting.json"
                 };
 
         /// <summary>

@@ -73,8 +73,6 @@ namespace GAFBot.Challonge.Api
             foreach(Match_Json matchj in matches)
             {
                 Match match = matchj.match;
-                if (match.round < 0 || !match.player1_id.HasValue || !match.player2_id.HasValue)
-                    continue;
 
                 if (match.state == "complete")
                     Matches.Add((MatchState.Closed, match));
@@ -126,9 +124,6 @@ namespace GAFBot.Challonge.Api
             
             foreach((MatchState, Match) match in Matches)
             {
-                if (!match.Item2.player1_id.HasValue || !match.Item2.player2_id.HasValue)
-                    continue;
-
                 if (match.Item2.player1_id == teams.Item1.id && match.Item2.player2_id == teams.Item2.id)
                 {
                     if (searchState)

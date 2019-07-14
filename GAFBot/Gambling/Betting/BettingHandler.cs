@@ -11,7 +11,7 @@ namespace GAFBot.Gambling.Betting
     public class BettingHandler
     {
         public static string BettingFile { get { return Program.CurrentPath + Program.Config.BettingFile; } }
-        public static int CurrentReward { get { return Program.Config.CurrentBettingReward; } set { Program.Config.CurrentBettingReward = value; } }
+        public static int CurrentReward { get; set; }
 
         public List<Bet> ActiveBets { get; private set; }
         
@@ -64,11 +64,11 @@ namespace GAFBot.Gambling.Betting
                 Program.Logger.Log($"Betting: Bet added", showConsole: Program.Config.Debug);
                 Coding.Methods.SendMessage(channelId, $"Your bet has been created ({b.MatchId} : {b.Team})");
             }
-            //else if (ActiveBets.FindAll(bt => bt.DiscordUserId == b.DiscordUserId).Count >= 2)
-            //{
-            //    Program.Logger.Log($"Betting: Could not create bet, user already have 2 bets running", showConsole: Program.Config.Debug);
-            //    Coding.Methods.SendMessage(channelId, "You already have 2 bets running");
-            //}
+            else if (ActiveBets.FindAll(bt => bt.DiscordUserId == b.DiscordUserId).Count >= 2)
+            {
+                Program.Logger.Log($"Betting: Could not create bet, user already have 2 bets running", showConsole: Program.Config.Debug);
+                Coding.Methods.SendMessage(channelId, "You already have 2 bets running");
+            }
             else
             {
                 Program.Logger.Log($"Betting: Could not create bet, user already betted on this game", showConsole: Program.Config.Debug);
@@ -130,9 +130,6 @@ namespace GAFBot.Gambling.Betting
 
             foreach (var match in matches)
             {
-                if (match.Item2.suggested_play_order < 0)
-                    continue;
-
                 ResolveBets(winningTeam, match.Item2.suggested_play_order);
             }
         }
@@ -144,21 +141,14 @@ namespace GAFBot.Gambling.Betting
         {
             Program.Logger.Log($"Betting: Resolving Bets {team}, {matchId}", showConsole: Program.Config.Debug);
 
-            List<Bet> bets = new List<Bet>();
-            
-            lock(ActiveBets)
+            List<Bet> bets = ActiveBets.FindAll(bt => bt.MatchId == matchId).ToList();
+
+            foreach (Bet b in bets)
             {
-                for (int i = 0; i < ActiveBets.Count; i++)
-                {
-                    if (matchId != ActiveBets[i].MatchId)
-                        continue;
+                if (b.Team == team)
+                    BetWin(b);
 
-                    if (ActiveBets[i].Team.Equals(team, StringComparison.CurrentCultureIgnoreCase))
-                        BetWin(ActiveBets[i]);
-
-                    ActiveBets.RemoveAt(i);
-                    i--;
-                }
+                ActiveBets.RemoveAll(bt => bt.MatchId == matchId && bt.Team == team && bt.DiscordUserId == b.DiscordUserId);
             }
         }
 
@@ -167,14 +157,7 @@ namespace GAFBot.Gambling.Betting
         /// </summary>
         private void BetWin(Bet b)
         {
-            User user = null;
-            lock (Program.MessageHandler.Users)
-            {
-                user = Program.MessageHandler.Users[b.DiscordUserId];
-            }
-            if (user == null)
-                return;
-
+            User user = Program.MessageHandler.Users[b.DiscordUserId];
             user.Points += CurrentReward;
 
             Program.Logger.Log($"Betting: User {user.DiscordID} won {CurrentReward} points for betting on {b.MatchId} {b.Team}", showConsole: Program.Config.Debug);
@@ -191,10 +174,7 @@ namespace GAFBot.Gambling.Betting
             Program.Logger.Log($"Betting: Saving bets", showConsole: Program.Config.Debug);
 
             if (ActiveBets == null || ActiveBets.Count <= 0)
-            {
-                ActiveBets = new List<Bet>();
-                ActiveBets.Add(new Bet("default bet", -1, 0));
-            }
+                return;
 
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(ActiveBets.ToArray());
             System.IO.File.WriteAllText(BettingFile, json);

@@ -6,9 +6,8 @@ namespace GAFBot.Commands
     public class TestCommand : ICommand
     {
         public char Activator { get => '!'; }
-        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "test"; }
-        public AccessLevel AccessLevel => AccessLevel.Admin;
+        public AccessLevel AccessLevel => AccessLevel.Moderator;
 
         public static void Init()
         {
@@ -20,23 +19,7 @@ namespace GAFBot.Commands
         {
             try
             {
-                var dguild = Coding.Methods.GetGuild(147255853341212672);
-                var dchannel = Coding.Methods.GetChannel(578984727583784980);
-
-                try
-                {
-                    string response = "```" + Environment.NewLine;
-
-                    foreach (var role in dguild.Roles)
-                        response += role.Name + ":" + role.Id + Environment.NewLine;
-
-                    response += "```";
-                    dchannel.SendMessageAsync(response).Wait();
-                }
-                catch (Exception ex)
-                {
-                    dchannel.SendMessageAsync(ex.ToString()).Wait();
-                }
+                Coding.Methods.SendMessage(e.ChannelID, "success");
             }
             catch (Exception ex)
             {

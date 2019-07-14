@@ -8,7 +8,6 @@ namespace GAFBot.Commands
     public class VerifyCommand : ICommand
     {
         public char Activator { get => '!'; }
-        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "verify"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 

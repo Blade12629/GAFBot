@@ -9,7 +9,7 @@ namespace GAFBot.MessageSystem
 {
     public class Logger
     {
-        public string File { get; set; }
+        public string File { get; private set; }
 
         public Logger(string file)
         {

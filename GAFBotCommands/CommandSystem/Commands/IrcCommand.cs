@@ -6,9 +6,8 @@ namespace GAFBot.Commands
     public class IrcCommand : ICommand
     {
         public char Activator { get => '!'; }
-        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "irc"; }
-        public AccessLevel AccessLevel => AccessLevel.Admin;
+        public AccessLevel AccessLevel => AccessLevel.Moderator;
 
         public static void Init()
         {

@@ -8,7 +8,6 @@ namespace GAFBot.Commands
     public class ConfigCommand : ICommand
     {
         public char Activator { get => '!'; }
-        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "config"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 

@@ -7,9 +7,8 @@ namespace GAFBot.Commands
     public class SettingsCommand : ICommand
     {
         public char Activator { get => '!'; }
-        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "settings"; }
-        public AccessLevel AccessLevel => AccessLevel.Admin;
+        public AccessLevel AccessLevel => AccessLevel.Moderator;
 
         public static void Init()
         {
