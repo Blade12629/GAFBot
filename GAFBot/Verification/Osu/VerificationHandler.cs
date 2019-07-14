@@ -12,28 +12,58 @@ namespace GAFBot.Verification.Osu
 {
     public class VerificationHandler
     {
-        /// <summary>
-        /// dUserId, osuUserName, code, codeEz
-        /// </summary>
-        public ConcurrentDictionary<ulong, (string, string)> ActiveVerifications { get; set; }
 
         string _host = Program.Config.IrcHost;
         int _port = Program.Config.IrcPort;
         string _user;
         string _password;
-
         IrcClient _client;
 
         public static MessageSystem.Logger Logger { get { return Program.Logger; } }
 
-        public bool IsRunning { get; set; }
+        public void GetUserStatus(string user, DSharpPlus.Entities.DiscordMessage message, string originalText)
+        {
+            try
+            {
+                _client.Message(new IrcString("BanchoBot"), new IrcString("!stats " + user));
+                
+                string userUnderscores = user.Replace(' ', '_');
+                user = user.Replace('_', ' ');
+
+                lock (_userStatusQueue)
+                {
+                    if (_userStatusQueue.FindIndex(p => p.Item2.Equals(userUnderscores, StringComparison.CurrentCultureIgnoreCase)) >= 0)
+                        return;
+                    
+                    _userStatusQueue.Add((message, userUnderscores, originalText));
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.Logger.Log(ex.ToString(), logToFile: false);
+            }
+        }
+
+        
+        /// <summary>
+        /// dUserId, code, codeEz
+        /// </summary>
+        public MultiDict<ulong, string> ActiveVerifications { get; set; }
+        public bool IsRunning { get; private set; }
         public bool Debug { get; set; }
 
         public VerificationHandler(bool debug = false)
         {
             Debug = debug;
-            ActiveVerifications = new ConcurrentDictionary<ulong, (string, string)>();
-            Program.SaveEvent += () => Save(Program.VerificationFile);
+            ActiveVerifications = new MultiDict<ulong, string>();
+            _userStatusQueue = new List<(DSharpPlus.Entities.DiscordMessage, string, string)>();
+            Program.LoadEvent += () => ActiveVerifications.Load(Program.VerificationFile);
+            Program.SaveEvent += () =>
+            {
+                IrcStop();
+                ActiveVerifications.Save(Program.VerificationFile);
+                IrcStart();
+            };
         }
         
         /// <summary>
@@ -55,27 +85,17 @@ namespace GAFBot.Verification.Osu
             string verificationStrEz = "";
 
             for (int i = 0; i < verificationKey.Length; i++)
-            {
                 verificationStr += verificationKey[i].ToString();
 
-                if (i % 3 == 0)
-                    verificationStrEz += " " + verificationKey[i].ToString();
-                else
-                    verificationStrEz += verificationKey[i];
-            }
-
-            while (!ActiveVerifications.TryAdd(duserid, (verificationStr, verificationStrEz)))
-                Task.Delay(5);
-
-            OnVerificationStart(duserid, verificationStr, verificationStrEz);
+            if (!ActiveVerifications.TryAdd(duserid, verificationStr))
+                return ("v", "active");
+            
+            OnVerificationStart(duserid, verificationStr);
 
             return (verificationStr, verificationStrEz);
         }
-
-        /// <summary>
-        /// dUserId, osuUserName, code, codeEz
-        /// </summary>
-        public event Action<ulong, string, string> OnVerificationStart;
+        
+        public event Action<ulong, string> OnVerificationStart;
         public event Action<ulong, string> OnVerified;
 
         /// <summary>
@@ -85,8 +105,7 @@ namespace GAFBot.Verification.Osu
         /// <param name="password"></param>
         public void Setup(string user, string password)
         {
-            if (Debug)
-                Logger.Log("VerificationHandler: Setting up irc client");
+            Logger.Log("VerificationHandler: Setting up irc client");
 
             _user = user;
             _password = password;
@@ -100,36 +119,137 @@ namespace GAFBot.Verification.Osu
         }
 
         /// <summary>
+        /// discordmessage, user, string to add result
+        /// </summary>
+        private List<(DSharpPlus.Entities.DiscordMessage, string, string)> _userStatusQueue;
+
+        /// <summary>
         /// Invoked if there is a new irc message
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         void _client_GotMessage(object sender, NetIrc2.Events.ChatMessageEventArgs e)
         {
-            string hostname = e.Sender.Hostname;
-            string userName = e.Sender.Nickname;
-            Logger.Log($"VerificationHandler: New Message: from {userName} {hostname} to {e.Recipient}: {e.Message}", showConsole: Debug);
+            string hostname = e.Sender.Hostname.ToString();
+            string nickName = e.Sender.Nickname.ToString();
+            string recipient = e.Recipient.ToString();
+            string message = e.Message.ToString();
 
-            if (!e.Recipient.ToString().StartsWith("Skyfly") || !e.Message.ToString().StartsWith("!verify"))
+            Logger.Log($"IRC: New Message: from {nickName} {hostname} to {recipient}: {message}");
+            //!verify 35483
+            if (!recipient.StartsWith("Skyfly"))
                 return;
 
-            string verifyStr = e.Message.ToString().Remove(0, "!verify ".Length);
+            //For getting the status
+            if (nickName.Equals("BanchoBot") && _userStatusQueue.Count > 0)
+            {
+                if (message.StartsWith("Stats for (", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    try
+                    {
+                        string user = message.Remove(0, message.IndexOf('(') + 1);
+                        user = user.Substring(0, user.IndexOf(')'));
+                        string underscoreUser = user.Replace(' ', '_');
+                        user = user.Replace('_', ' ');
+                        
+                        //count 10, index 6, 10-6 = 4
+                        int indexStatus = message.IndexOf(']') + 1;
+                        string status = message.Remove(0, indexStatus + 4);
+                        List<char> removeChars = new List<char>();
+                        removeChars.AddRange(Environment.NewLine.ToList());
+                        removeChars.Add(':');
+                        removeChars.Add(' ');
+                        char[] removeCharsA = removeChars.ToArray();
+                        
+                        status = status.TrimStart(removeCharsA).TrimEnd(removeCharsA);
+
+                        DSharpPlus.Entities.DiscordMessage dmessage = null;
+                        string username = "";
+                        string originalText = "";
+
+                        Console.WriteLine("user: " + user);
+                        Console.WriteLine("underscore user: " + underscoreUser);
+                        
+                        lock (_userStatusQueue)
+                        {
+                            for (int i = 0; i < _userStatusQueue.Count; i++)
+                            {
+                                var pair = _userStatusQueue[i];
+
+                                Console.WriteLine("pair: " + pair.Item2);
+
+                                if (pair.Item2.Equals(user, StringComparison.CurrentCultureIgnoreCase) || pair.Item2.Equals(underscoreUser, StringComparison.CurrentCultureIgnoreCase))
+                                {
+                                    dmessage = pair.Item1;
+                                    username = pair.Item2;
+                                    originalText = pair.Item3;
+                                    _userStatusQueue.RemoveAt(i);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (dmessage == null)
+                            return;
+
+                        dmessage.ModifyAsync(originalText + status + Environment.NewLine + "```").Wait();
+
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.Logger.Log(ex.ToString(), logToFile: false);
+                    }
+                }
+            }
+
+            if (!message.StartsWith("!verify"))
+                return;
+
+            if (message.Length <= "!verify ".Length)
+            {
+                Logger.Log($"IRC: {nickName} - Verification id cannot be empty", showConsole: Debug);
+                ircMsg("Verification id cannot be empty");
+                return;
+            }
+            string verifyStr = message.Remove(0, "!verify ".Length);
+            //!verify 35483
+            //35483
             ulong userId = 0;
 
-            Logger.Log($"VerificationHandler: Looking for userid for code: {verifyStr} full string: {e.Message.ToString()}", showConsole: Debug);
-
-            lock(ActiveVerifications)
+            Logger.Log($"VerificationHandler: Looking for userid for code: {verifyStr} full string: {message}", showConsole: Debug);
+            
+            if (string.IsNullOrEmpty(verifyStr))
             {
-                int indexOf = ActiveVerifications.Values.ToList().FindIndex(ss => ss.Item1.Equals(verifyStr, StringComparison.CurrentCultureIgnoreCase) || ss.Item2.Equals(verifyStr, StringComparison.CurrentCultureIgnoreCase));
-                userId = ActiveVerifications.Keys.ElementAt(indexOf);
+                Logger.Log($"IRC: {nickName} - Verification id cannot be empty", showConsole: Debug);
+                ircMsg("Verification id cannot be empty");
+                return;
+            }
+
+            if (!ActiveVerifications.TryGetValue(verifyStr, out userId))
+            {
+                Logger.Log($"IRC: {nickName} - Could not find your verification id |{userId}|{verifyStr}|", showConsole: Debug);
+                ircMsg($"Could not find your verification id |{userId}|{verifyStr}|");
+                return;
             }
 
             Logger.Log("VerificationHandler: Found userid: " + userId, showConsole: Debug);
 
             if (userId > 0)
             {
-                VerifyUser(userId, userName);
-                Logger.Log($"VerificationHandler: Verified user {userId} {userName}", showConsole: Debug);
+                Logger.Log($"IRC: {nickName} - Verifying", showConsole: Debug);
+                ircMsg("Verifying...");
+                VerifyUser(userId, nickName);
+            }
+            else
+            {
+                Logger.Log($"IRC: {nickName} - Could not find your userId {userId}", showConsole: Debug);
+                ircMsg("Could not find your userId " + userId);
+            }
+
+            void ircMsg(string msg)
+            {
+                _client.Message(e.Sender.Nickname, new IrcString(message));
             }
         }
 
@@ -155,21 +275,23 @@ namespace GAFBot.Verification.Osu
                 {
                     if (currentUsers.Find(u => !string.IsNullOrEmpty(u.OsuUserName) && u.OsuUserName.Equals(osuUserName, StringComparison.CurrentCultureIgnoreCase)) != null)
                     {
+                        Program.Logger.Log("Account already linked: " + osuUserName, showConsole: Debug);
                         var privChannel = Coding.Methods.GetPrivChannel(duserId);
                         privChannel.SendMessageAsync("Your user account has already been linked to an discord account" + Environment.NewLine +
                             "If this is an error or is incorrect, please contact Skyfly on discord (??????#0284 (6*?)))").Wait();
                         return;
                     }
                 }
+                
+                if (!Program.MessageHandler.Users.TryGetValue(duserId, out User user))
+                {
+                    Program.Logger.Log("Could not find userid: " + duserId, showConsole: Debug);
+                    var privChannel = Coding.Methods.GetPrivChannel(duserId);
+                    privChannel.SendMessageAsync("Could not find user " + duserId).Wait();
+                    return;
+                }
 
-                User user = null;
-
-                while (!Program.MessageHandler.Users.TryGetValue(duserId, out user))
-                    Task.Delay(5).Wait();
-
-                if (ActiveVerifications.ContainsKey(duserId))
-                    while (!ActiveVerifications.TryRemove(duserId, out (string, string) value))
-                        Task.Delay(5).Wait();
+                ActiveVerifications.TryRemove(duserId, out string strVal);
 
                 user.Verified = true;
                 user.OsuUserName = osuUserName;
@@ -199,7 +321,12 @@ namespace GAFBot.Verification.Osu
         /// <returns></returns>
         public bool IsUserVerified(ulong duserId)
         {
-            User user = Program.MessageHandler.Users[duserId];
+            User user = null;
+
+            lock(Program.MessageHandler.Users)
+            {
+                user = Program.MessageHandler.Users[duserId];
+            }
 
             if (user != null)
                 return user.Verified;
@@ -214,7 +341,12 @@ namespace GAFBot.Verification.Osu
         /// <returns></returns>
         public bool IsUserVerified(string osuUsername)
         {
-            User user = Program.MessageHandler.Users.Values.ToList().Find(u => u.OsuUserName.Equals(osuUsername, StringComparison.CurrentCultureIgnoreCase));
+            User user = null;
+
+            lock (Program.MessageHandler.Users)
+            {
+                user = Program.MessageHandler.Users.Values.ToList().Find(u => u.OsuUserName.Equals(osuUsername, StringComparison.CurrentCultureIgnoreCase));
+            }
 
             if (user != null)
                 return user.Verified;
@@ -298,7 +430,7 @@ namespace GAFBot.Verification.Osu
                 return;
             lock(ActiveVerifications)
             {
-                ActiveVerifications = Newtonsoft.Json.JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, (string, string)>>(json);
+                ActiveVerifications = Newtonsoft.Json.JsonConvert.DeserializeObject<MultiDict<ulong, string>>(json);
             }
         }
 
@@ -316,6 +448,113 @@ namespace GAFBot.Verification.Osu
             }
 
             System.IO.File.WriteAllText(file, json);
+        }
+    }
+
+    /// <summary>
+    /// Thread-safe multi-dictionary for having 2 keys/values at the same time and easly accessing them
+    /// </summary>
+    public class MultiDict<T, A>
+    {
+        private ConcurrentDictionary<T, A> _valuesOne;
+        private ConcurrentDictionary<A, T> _valuesTwo;
+
+        public MultiDict()
+        {
+            _valuesOne = new ConcurrentDictionary<T, A>();
+            _valuesTwo = new ConcurrentDictionary<A, T>();
+        }
+
+        public void Save(string file)
+        {
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(_valuesOne, Newtonsoft.Json.Formatting.Indented);
+            System.IO.File.WriteAllText(file, json);
+        }
+
+        public void Load(string file)
+        {
+            string json = System.IO.File.ReadAllText(file);
+
+            lock (this)
+            {
+                _valuesOne = Newtonsoft.Json.JsonConvert.DeserializeObject<ConcurrentDictionary<T, A>>(json);
+                _valuesTwo = new ConcurrentDictionary<A, T>();
+
+                foreach (var pair in _valuesOne)
+                    _valuesTwo.TryAdd(pair.Value, pair.Key);
+            }
+        }
+
+        public bool ContainsKey(T key)
+        {
+            lock (this)
+                return _valuesOne.ContainsKey(key);
+        }
+        
+        public bool ContainsKey(A key)
+        {
+            lock (this)
+                return _valuesTwo.ContainsKey(key);
+        }
+        
+        public bool ContainsValue(T value)
+            => ContainsKey(value);
+        
+        public bool ContainsValue(A value)
+            => ContainsKey(value);
+
+        public bool TryAdd(T key, A value)
+        {
+            if (!_valuesOne.TryAdd(key, value))
+                return false;
+
+            if(!_valuesTwo.TryAdd(value, key))
+            {
+                _valuesOne.TryRemove(key, out A newVal);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryAdd(A key, T value)
+        {
+            if (!_valuesTwo.TryAdd(key, value))
+                return false;
+
+            if (_valuesOne.TryAdd(value, key))
+            {
+                _valuesTwo.TryRemove(key, out T newVal);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryRemove(T key, out A value)
+        {
+            if (!_valuesOne.TryRemove(key, out value))
+                return false;
+
+            return _valuesTwo.TryRemove(value, out T result);
+        }
+
+        public bool TryRemove(A key, out T value)
+        {
+            if (!_valuesTwo.TryRemove(key, out value))
+                return false;
+
+            return _valuesOne.TryRemove(value, out A result);
+        }
+
+        public bool TryGetValue(T key, out A value)
+        {
+            return _valuesOne.TryGetValue(key, out value);
+        }
+
+        public bool TryGetValue(A key, out T value)
+        {
+            return _valuesTwo.TryGetValue(key, out value);
         }
     }
 }

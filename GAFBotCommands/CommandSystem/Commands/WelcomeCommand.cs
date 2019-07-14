@@ -3,25 +3,24 @@ using System;
 
 namespace GAFBot.Commands
 {
-    public class TestCommand : ICommand
+    public class WelcomeCommand : ICommand
     {
         public char Activator { get => '!'; }
         public char ActivatorSpecial { get => default(char); }
-        public string CMD { get => "test"; }
+        public string CMD { get => "welcome"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
         public static void Init()
         {
-            Program.CommandHandler.Register(new TestCommand() as ICommand);
-            Coding.Methods.Log(typeof(TestCommand).Name + " Registered");
+            Program.CommandHandler.Register(new WelcomeCommand() as ICommand);
+            Coding.Methods.Log(typeof(WelcomeCommand).Name + " Registered");
         }
 
         public void Activate(CommandEventArg e)
         {
-            try
             {
-                var dguild = Coding.Methods.GetGuild(147255853341212672);
-                var dchannel = Coding.Methods.GetChannel(578984727583784980);
+                var dguild = Coding.Methods.GetGuild(Program.Config.DiscordGuildId);
+                var dchannel = Coding.Methods.GetChannel(Program.Config.WelcomeChannel);
 
                 try
                 {
@@ -36,6 +35,22 @@ namespace GAFBot.Commands
                 catch (Exception ex)
                 {
                     dchannel.SendMessageAsync(ex.ToString()).Wait();
+                }
+
+            }
+            try
+            {
+                if (string.IsNullOrEmpty(e.AfterCMD))
+                    return;
+
+                var duser = Coding.Methods.GetUser(e.DUserID);
+
+                if (e.AfterCMD.StartsWith("_test", StringComparison.CurrentCultureIgnoreCase))
+                    Program.MessageHandler.WelcomeMessage(e.ChannelID, Program.Config.WelcomeMessage, duser.Mention);
+                else
+                {
+                    Program.Config.WelcomeMessage = e.AfterCMD;
+                    Coding.Methods.SendMessage(e.ChannelID, "Updated Welcomemessage to " + e.AfterCMD);
                 }
             }
             catch (Exception ex)

@@ -17,8 +17,6 @@ namespace GAFBot
 {
     public class Program
     {
-        public static MessageSystem.Logger Logger { get; private set; }
-
         static void Main(string[] args)
             => MainTask(args).ConfigureAwait(false).GetAwaiter().GetResult();
 
@@ -27,19 +25,31 @@ namespace GAFBot
         public static string LogFile { get { return CurrentPath + Config.LogFile; } }
         public static string ConfigFile { get { return CurrentPath + @"\gafbot.config"; } }
         public static string VerificationFile { get { return CurrentPath + Config.VerificationFile; } }
-        public static MessageSystem.MessageHandler MessageHandler { get; private set; }
-        public static Commands.ICommandHandler CommandHandler { get; private set; }
         public static Assembly CommandAssembly { get; private set; }
         public static Type CommandAssemblyType { get { return CommandAssembly.GetType("GAFBot.Commands.CommandHandler"); } }
         public static string CurrentCommandAssemblyName { get { return @"\GAFBotCommands.dll"; } }
+
+        public static Assembly ApiAssembly { get; set; }
+        public static Type ApiAssemblyType { get { return CommandAssembly.GetType("GAFBot.Api.ApiHandler"); } }
+        public static string ApiAssemblyName { get { return @"\GAFBotApi.dll"; } }
+
+        public static Commands.ICommandHandler CommandHandler { get; private set; }
+        public static MessageSystem.MessageHandler MessageHandler { get; private set; }
         public static Verification.Osu.VerificationHandler VerificationHandler { get; private set; }
-
-
         public static Challonge.Api.ChallongeHandler ChallongeHandler { get; private set; }
-
-
-        
         public static Gambling.Betting.BettingHandler BettingHandler { get; private set; }
+        public static MessageSystem.Logger Logger { get; private set; }
+
+        public static void RequestOsuUserStatus(string user, DiscordMessage message, string originalText)
+        {
+            if (VerificationHandler == null)
+            {
+                message.ModifyAsync(originalText + "failed to request status").Wait();
+                return;
+            }
+
+            VerificationHandler.GetUserStatus(user, message, originalText);
+        }
 
         static System.Timers.Timer _saveTimer;
 
@@ -61,14 +71,17 @@ namespace GAFBot
 
         static EventWaitHandle _ewh;
 
-        public static async Task MainTask(string[] args)
+        private static async Task MainTask(string[] args)
         {
+            SaveEvent += () => Config.SaveConfig(ConfigFile, Config);
             ExitEvent += () =>
             {
+                Logger.Log("Exit Event: Invoking Save Event");
                 SaveEvent();
 
                 if (Client != null)
                 {
+                    Logger.Log("Exit Event: Closing Discord connections");
                     IReadOnlyList<DiscordConnection> connections = Client.GetConnectionsAsync().Result;
                     if (connections.Count > 0)
                     {
@@ -79,18 +92,24 @@ namespace GAFBot
 
                 if (VerificationHandler != null && VerificationHandler.IsRunning)
                 {
+                    Logger.Log("Exit Event: Closing Verification Handler");
                     VerificationHandler.IrcStop();
                     VerificationHandler.Save(VerificationFile);
                 }
             };
             LoadEvent += () =>
             {
+                Logger.Log("LoadEvent: Loading Discord");
                 LoadDiscord();
+                Logger.Log("LoadEvent: Loading Message System");
                 LoadMessageSystem();
-                Logger.Log("Program: Loading Commands");
+                Logger.Log("LoadEvent: Loading Commands");
                 LoadCommands();
+                Logger.Log("LoadEvent: Loading Verification");
                 LoadVerification();
+                Logger.Log("LoadEvent: Loading Challonge");
                 LoadChallonge();
+                Logger.Log("LoadEvent: Loading Betting");
                 LoadBetting();
             };
 
@@ -105,6 +124,7 @@ namespace GAFBot
                 Logger.Initialize();
 
                 LoadEvent();
+
 
                 Logger.Log("Program: Starting AutoSaveTimer");
                 StartSaveTimer();
@@ -127,6 +147,8 @@ namespace GAFBot
             await Task.Delay(-1);
         }
 
+        #region load
+
         /// <summary>
         /// Initializes the Verification
         /// </summary>
@@ -135,12 +157,9 @@ namespace GAFBot
             Logger.Log("Program: Initializing Osu irc");
             VerificationHandler = new Verification.Osu.VerificationHandler(Config.Debug);
             VerificationHandler.Setup(Config.IrcUser, Config.IrcPass);
-            VerificationHandler.OnVerificationStart += (id, key, keyez) => Logger.Log($"Program: Verification started with: {id} {key} {keyez}");
+            VerificationHandler.OnVerificationStart += (id, key) => Logger.Log($"Program: Verification started with: {id} {key}");
             VerificationHandler.OnVerified += (id, osu) => Logger.Log($"Program: User verified: {id} {osu}");
             VerificationHandler.IrcStart();
-
-            if (System.IO.File.Exists(VerificationFile))
-                VerificationHandler.Load(VerificationFile);
         }
 
         /// <summary>
@@ -251,14 +270,9 @@ namespace GAFBot
                 return;
 
             Logger.Log("Program: " + CurrentCommandAssemblyName);
-
-            //using (MemoryStream mstream = new MemoryStream())
-            //{
+            
             byte[] assemblyBytes = File.ReadAllBytes(CurrentPath + CurrentCommandAssemblyName);
-            //mstream.Write(assemblyBytes, 0, assemblyBytes.Length);
-            //mstream.Seek(0, SeekOrigin.Begin);
             CommandAssembly = Assembly.Load(assemblyBytes);
-            //}
 
             CommandHandler = Activator.CreateInstance(CommandAssemblyType) as Commands.ICommandHandler;
             CommandHandler.LoadCommands();
@@ -282,6 +296,10 @@ namespace GAFBot
             BettingHandler = new Gambling.Betting.BettingHandler();
             BettingHandler.Load();
         }
+
+        #endregion
+
+        #region consoleEvents
 
         [DllImport("Kernel32")]
         static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
@@ -316,5 +334,7 @@ namespace GAFBot
                     return false;
             }
         }
+
+        #endregion
     }
 }

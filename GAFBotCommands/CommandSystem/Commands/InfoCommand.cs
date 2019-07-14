@@ -8,6 +8,7 @@ namespace GAFBot.Commands
     public class InfoCommand : ICommand
     {
         public char Activator { get => '!'; }
+        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "infou"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
@@ -32,8 +33,15 @@ namespace GAFBot.Commands
             }
             else if (!ulong.TryParse(e.AfterCMD, out userid))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Could not parse userid");
-                return;
+                //check if it's a mention
+                string mention = e.AfterCMD.TrimStart('<', '@', '!');
+                mention = mention.Remove(mention.ToList().FindIndex(c => c.Equals('>')), 1);
+
+                if (!ulong.TryParse(mention, out userid))
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, "Could not parse userid");
+                    return;
+                }
             }
 
             if (Program.MessageHandler.Users.ContainsKey(userid))

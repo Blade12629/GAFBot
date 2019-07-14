@@ -40,10 +40,22 @@ namespace GAFBot.Commands
 
                 CommandEventArg arg = new CommandEventArg(id, name, (guild == null ? (ulong?)null : guildid), chid, activator, _cmd, aftercmd);
 
-                ICommand cmd = ActiveCommands.Find(cmd_ => cmd_.Activator.Equals(arg.Activator) && cmd_.CMD.Equals(arg.CMD));
+
+                ICommand cmd = null;
+
+                //For now i hardcode this cause I'm lazy
+                if (activator.Equals('>'))
+                {
+                    Console.WriteLine(">");
+                    TextCommand.OnTextCommand(arg);
+                    return true;
+                }
+
+                cmd = ActiveCommands.Find(cmd_ => cmd_.Activator.Equals(arg.Activator) && cmd_.CMD.Equals(arg.CMD));
 
                 if (cmd == null)
                     return false;
+
 
                 if ((int)cmd.AccessLevel > (int)access)
                     return false;

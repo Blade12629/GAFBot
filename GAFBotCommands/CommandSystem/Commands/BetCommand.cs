@@ -1,14 +1,16 @@
 ﻿using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GAFBot.Commands
 {
     public class BetCommand : ICommand
     {
         public char Activator { get => '!'; }
+        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "bet"; }
-        public AccessLevel AccessLevel => AccessLevel.Moderator;
+        public AccessLevel AccessLevel => AccessLevel.User;
 
         public static void Init()
         {
@@ -20,17 +22,30 @@ namespace GAFBot.Commands
         {
             try
             {
-                if (DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday || (DateTime.UtcNow.DayOfWeek == DayOfWeek.Monday && DateTime.UtcNow.Hour <= 7))
+                ulong[] channels = new ulong[2]
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "You can only bet from monday 8:00 am till friday 12:00 am (UTC)");
+                    Program.Config.BetChannel, //#bet_channel
+                    Program.Config.DevChannel //#skyfly-room
+                };
+                User user = null;
+
+                if (!Program.MessageHandler.Users.TryGetValue(e.DUserID, out user))
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
                     return;
                 }
-
-                Console.WriteLine(Program.ChallongeHandler.LastUpdate);
-                Console.WriteLine(Program.ChallongeHandler.Matches.Count);
-                Console.WriteLine(Program.ChallongeHandler.Participants.Count);
-                Console.WriteLine(e.AfterCMD);
-                //!bet matchId team
+                
+                if (!channels.Contains(e.ChannelID))
+                {
+                    if (user.AccessLevel != AccessLevel.Admin)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "You can only bet in #bet_channel!");
+                        return;
+                    }
+                    else
+                        Coding.Methods.SendMessage(e.ChannelID, "Bypassed channel restriction due to admin status");
+                }
+                
                 string[] msgS = e.AfterCMD.Split(' ');
                 int matchId = -1;
                 DSharpPlus.Entities.DiscordEmbedBuilder embedBuilder = new DSharpPlus.Entities.DiscordEmbedBuilder();
@@ -76,9 +91,9 @@ namespace GAFBot.Commands
                     }
                     else if (e.AfterCMD.ToLower().StartsWith("remove"))
                     {
-                        if (!int.TryParse(msgS[0], out matchId))
+                        if (!int.TryParse(msgS[1], out matchId))
                         {
-                            Coding.Methods.SendMessage(e.ChannelID, $"Could not parse {msgS[0]} to int");
+                            Coding.Methods.SendMessage(e.ChannelID, $"Could not parse {msgS[1]} to int");
                             return;
                         }
                         Coding.Methods.SendMessage(e.ChannelID, "Removing your bet on match " + matchId);
@@ -88,8 +103,9 @@ namespace GAFBot.Commands
                     }
                     else if (e.AfterCMD.ToLower().StartsWith("_admin"))
                     {
-                        if (Program.MessageHandler.Users[e.DUserID].AccessLevel < AccessLevel.Admin)
+                        if (Program.MessageHandler.Users[e.DUserID].AccessLevel != AccessLevel.Admin)
                             return;
+
                         //!bet _admin
                         string newmessage = e.AfterCMD.Remove(0, "_admin ".Length);
 
@@ -128,9 +144,23 @@ namespace GAFBot.Commands
                         return;
                     }
                     
+                    if ((int)user.AccessLevel < (int)AccessLevel.Admin && !CanBet())
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "You can only bet from monday 8:00 am till friday 12:00 am (UTC)");
+                        return;
+                    }
+                    
                     string team = e.AfterCMD.Remove(0, msgS[0].Length + 1);
 
                     Program.BettingHandler.AddBet(team, matchId, e.DUserID, e.ChannelID);
+
+                    bool CanBet()
+                    {
+                        if (DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday || (DateTime.UtcNow.DayOfWeek == DayOfWeek.Monday && DateTime.UtcNow.Hour <= 7))
+                            return false;
+
+                        return true;
+                    }
                 }
             }
             catch (Exception ex)

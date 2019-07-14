@@ -6,8 +6,9 @@ namespace GAFBot.Commands
     public class UserCommand : ICommand
     {
         public char Activator { get => '!'; }
+        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "user"; }
-        public AccessLevel AccessLevel => AccessLevel.Moderator;
+        public AccessLevel AccessLevel => AccessLevel.Admin;
 
         public static void Init()
         {

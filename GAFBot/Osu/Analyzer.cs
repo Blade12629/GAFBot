@@ -12,6 +12,7 @@ namespace GAFBot.Osu
         /// <summary>
         /// Creates a qualifier statistic for a osu mp match
         /// </summary>
+        [Obsolete("Use CreateStatistic", true)]
         public QualifierStageResult CreateQualifierStatistics(HistoryJson.History history)
         {
             var HighestScoreRankingResult = CalculateHighestRankingAndPlayCount(GetData.GetMatches(history), history);
@@ -54,12 +55,10 @@ namespace GAFBot.Osu
                     HighestScore = HighestScoreRankingResult.Item1[0].Item1,
                     HighestScoreBeatmap = HighestScoreRankingResult.Item1[0].Item2,
                     HighestScoresRanking = HighestScoreRankingResult.Item1[0].Item3,
-                    HighestScoreUser = HighestScoreRankingResult.Item1[0].Item3[0].Player,
 
                     HighestAccuracyScore = HighestScoreRankingResult.Item1[1].Item1,
                     HighestAccuracyBeatmap = HighestScoreRankingResult.Item1[1].Item2,
                     HighestAverageAccuracyRanking = HighestScoreRankingResult.Item1[1].Item3,
-                    HighestAverageAccuracyUser = HighestScoreRankingResult.Item1[1].Item3[0].Player,
 
                     IsQualifier = false,
 
@@ -76,6 +75,8 @@ namespace GAFBot.Osu
 
                     TimeStamp = history.Events.Last().TimeStamp
                 };
+                result.HighestScoreUser = HighestScoreRankingResult.Item1[0].Item3.First(r => r.Player.UserId == result.HighestScore.user_id).Player;
+                result.HighestAccuracyUser = HighestScoreRankingResult.Item1[1].Item3.First(r => r.Player.UserId == result.HighestAccuracyScore.user_id).Player;
                 result.Ranks = HighestScoreRankingResult.Item1[0].Item3;
                 result.Beatmaps = HighestScoreRankingResult.Item2.Select(b => b.BeatMap).ToArray();
             }
@@ -146,8 +147,7 @@ namespace GAFBot.Osu
             string[] MatchNameSplit = matchName.Split(' ');
             string teamRed = MatchNameSplit[1].TrimStart('(');
             int teamVsIndex = MatchNameSplit.ToList().FindIndex(str => str.ToLower().Equals("vs"));
-
-
+            
             for (int i = 2; i < teamVsIndex; i++)
                 teamRed += string.Format(" {0}", MatchNameSplit[i]);
 
@@ -190,7 +190,7 @@ namespace GAFBot.Osu
 
                 if (gameScores == null)
                     continue;
-                else if (!Program.Config.QualifierStage && Program.Config.WarmupMatchCount > 0 && warmupCounter < Program.Config.WarmupMatchCount)
+                else if (Program.Config.WarmupMatchCount > 0 && warmupCounter < Program.Config.WarmupMatchCount)
                 {
                     warmupCounter++;
                     continue;

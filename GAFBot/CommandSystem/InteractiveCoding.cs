@@ -154,9 +154,8 @@ namespace GAFBot
                     #region Encapsulate Code into a single Method
 
                     string baseMethodCode =
-                        "var dclient = Coding.Methods.GetClient();" + Environment.NewLine +
-                    (currentGuild == 0 ? "" : $"var dguild = dclient.GetGuildAsync(326752025750667264).Result;") + Environment.NewLine +
-                    $"var dchannel = dguild.GetChannel(331108527022276610);";
+                        "var dclient = Coding.Methods.GetClient();" + Environment.NewLine;
+
                     string code =
                         "using System;" + Environment.NewLine +
                         "using System.IO;" + Environment.NewLine +
@@ -224,7 +223,7 @@ namespace GAFBot
                         if (!result.Success)
                         {
                             Program.Logger.Log("Compiler: Error at compiling", showConsole: Program.Config.Debug);
-                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Program.Logger.Log("Compiler: " + diag.GetMessage(), showConsole: Program.Config.Debug)));
+                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Program.Logger.Log("Compiler: " + diag.GetMessage(), showConsole: Program.Config.Debug));
                             return new KeyValuePair<bool, object>(false, null);
                         }
 
@@ -305,6 +304,30 @@ namespace GAFBot
             public static DSharpPlus.Entities.DiscordGuild GetGuild(ulong id)
                 => GetClient().Guilds.ToList().Find(p => p.Key == id).Value;
 
+            public static void React(ulong channelId, ulong messageId, string emote)
+            {
+                var dclient = GetClient();
+                var dchannel = GetChannel(channelId);
+                if (dchannel == null)
+                    return;
+
+                var dmessage = dchannel.GetMessageAsync(messageId).Result;
+
+                if (dmessage == null)
+                    return;
+
+                dmessage.CreateReactionAsync(DSharpPlus.Entities.DiscordEmoji.FromName(dclient, emote)).Wait();
+            }
+
+            public static void SetAccessLevel(ulong id, MessageSystem.AccessLevel accessLevel = MessageSystem.AccessLevel.User)
+            {
+                if (Program.MessageHandler.Users.TryGetValue(id, out MessageSystem.User user))
+                    Program.MessageHandler.Users[id].AccessLevel = accessLevel;
+            }
+
+            public static void SetAccess(ulong id, int accessLevel)
+                => SetAccessLevel(id, (MessageSystem.AccessLevel)accessLevel);
+
             public static DSharpPlus.Entities.DiscordChannel GetChannel(ulong id)
                 => GetClient().GetChannelAsync(id).Result;
 
@@ -351,12 +374,7 @@ namespace GAFBot
 
             public static void abc()
             {
-                var client = Coding.Methods.GetClient();
-                var guild = client.GetGuildAsync(147255853341212672).Result;
-                var member = guild.GetMemberAsync(140896783717892097).Result;
-                var role = guild.GetRole(579618821518786570);
-                guild.GrantRoleAsync(member, role).Wait();
-                member.GrantRoleAsync(role).Wait();
+                Coding.Methods.React(147255853341212672, 581875191550836887, ":monkaS:");
             }
 
             public static bool CreateRole(DSharpPlus.DiscordClient client, ulong GuildID, string RoleName, int r, int g, int b)

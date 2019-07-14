@@ -6,6 +6,7 @@ namespace GAFBot.Commands
     public class CSCommand : ICommand
     {
         public char Activator { get => '!'; }
+        public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "cs"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
