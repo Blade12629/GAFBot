@@ -30,7 +30,7 @@ namespace GAFBot.Osu.results
         public Player HighestScoreUser { get; set; }
 
         public HistoryJson.BeatMap HighestAccuracyBeatmap { get; set; }
-        public Player HighestAverageAccuracyUser { get; set; }
+        public Player HighestAccuracyUser { get; set; }
         public HistoryJson.Score HighestAccuracyScore { get; set; }
 
         public Rank[] HighestAverageAccuracyRanking { get; set; }

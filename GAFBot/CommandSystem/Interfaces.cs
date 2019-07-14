@@ -32,6 +32,7 @@ namespace GAFBot.Commands
     {
         char Activator { get; }
         string CMD { get; }
+        char ActivatorSpecial { get; }
         AccessLevel AccessLevel { get; }
         /// <summary>
         /// Activates the command
