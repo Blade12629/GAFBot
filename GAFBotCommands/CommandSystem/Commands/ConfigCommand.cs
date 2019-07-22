@@ -28,6 +28,7 @@ namespace GAFBot.Commands
                 {
                     case "r":
                     case "reload":
+                        Program.LoadConfig();
                         Program.LoadCommands();
                         Coding.Methods.SendMessage(e.ChannelID, "Config reloaded");
                         Coding.Methods.Log("Config reloaded");

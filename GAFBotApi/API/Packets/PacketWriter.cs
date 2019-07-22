@@ -64,5 +64,4 @@ namespace GAFBot.API.Packets
         public Packet Build()
             => new Packet(PacketData);
     }
-
 }

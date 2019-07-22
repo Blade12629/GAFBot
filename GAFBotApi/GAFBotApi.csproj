@@ -5,9 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="GAFBot">
-      <HintPath>..\GAFBot\bin\Release\netcoreapp2.2\publish\GAFBot.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\GAFBot\GAFBot.csproj" />
   </ItemGroup>
 
 </Project>

@@ -24,8 +24,8 @@ namespace GAFBot.Commands
             {
                 ulong[] channels = new ulong[2]
                 {
-                    Program.Config.BetChannel, //#bet_channel
-                    Program.Config.DevChannel //#skyfly-room
+                    Program.Config.BetChannel,
+                    Program.Config.DevChannel 
                 };
                 User user = null;
 
@@ -144,7 +144,7 @@ namespace GAFBot.Commands
                         return;
                     }
                     
-                    if ((int)user.AccessLevel < (int)AccessLevel.Admin && !CanBet())
+                    if ((int)user.AccessLevel < (int)AccessLevel.Admin)
                     {
                         Coding.Methods.SendMessage(e.ChannelID, "You can only bet from monday 8:00 am till friday 12:00 am (UTC)");
                         return;

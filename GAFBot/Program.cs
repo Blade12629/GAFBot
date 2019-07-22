@@ -1,10 +1,13 @@
-﻿using System;
+﻿#define PUBLICRELEASE
+#define BETARELEASE
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -71,6 +74,11 @@ namespace GAFBot
 
         static EventWaitHandle _ewh;
 
+
+        private static API.APIServer _apiServer;
+        internal static API.APIServer ApiServer { get { return _apiServer; } }
+
+
         private static async Task MainTask(string[] args)
         {
             SaveEvent += () => Config.SaveConfig(ConfigFile, Config);
@@ -107,10 +115,16 @@ namespace GAFBot
                 LoadCommands();
                 Logger.Log("LoadEvent: Loading Verification");
                 LoadVerification();
+#if (BETARELEASE)
                 Logger.Log("LoadEvent: Loading Challonge");
                 LoadChallonge();
                 Logger.Log("LoadEvent: Loading Betting");
                 LoadBetting();
+#endif
+#if (!PUBLICRELEASE)
+                Logger.Log("LoadEvent: Loading API");
+                LoadAPI();
+#endif
             };
 
             _handler += new EventHandler(Handler);
@@ -124,14 +138,13 @@ namespace GAFBot
                 Logger.Initialize();
 
                 LoadEvent();
-
-
+                
                 Logger.Log("Program: Starting AutoSaveTimer");
                 StartSaveTimer();
 
                 Logger.Log("Program: Connecting discord client");
                 await Client.ConnectAsync();
-
+                
                 Logger.Log("Program: GAF Bot initialized");
                 _ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
                 _ewh.WaitOne();
@@ -147,7 +160,7 @@ namespace GAFBot
             await Task.Delay(-1);
         }
 
-        #region load
+#region load
 
         /// <summary>
         /// Initializes the Verification
@@ -297,9 +310,24 @@ namespace GAFBot
             BettingHandler.Load();
         }
 
-        #endregion
+        public static void LoadAPI()
+        {
+            try
+            {
+                API.APICalls.Init();
+                _apiServer = new API.APIServer(40003, IPAddress.Any);
+                _apiServer.OnClientConnected += (id) => Console.WriteLine("New connection with session id " + id);
+                _apiServer.Start();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("API EXCEPTION: " + ex.ToString());
+            }
+        }
 
-        #region consoleEvents
+#endregion
+
+#region consoleEvents
 
         [DllImport("Kernel32")]
         static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
@@ -335,6 +363,6 @@ namespace GAFBot
             }
         }
 
-        #endregion
+#endregion
     }
 }
