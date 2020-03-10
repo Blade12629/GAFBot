@@ -107,7 +107,6 @@ namespace GAFBot
                         IncludeDebugInformation = false,
                         OutputAssembly = "ScreenFunction"
                     };
-
                     System.CodeDom.Compiler.CompilerResults CompileResult = CSharpCompiler.CompileAssemblyFromSource(parameters, Code);
                     #endregion
 
@@ -133,7 +132,7 @@ namespace GAFBot
                                     Environment.NewLine);
                             }
 
-                            Program.Logger.Log("Compiler: " + ErrorText.ToString(), showConsole: Program.Config.Debug);
+                            Logger.Log("Compiler: " + ErrorText.ToString(), LogLevel.Trace);
                             #endregion
 
                         }
@@ -173,6 +172,10 @@ namespace GAFBot
                         "using GAFBot.MessageSystem;" + Environment.NewLine +
                         "using GAFBot.Osu;" + Environment.NewLine +
                         "using GAFBot.Osu.Api;" + Environment.NewLine +
+                        "using DSharpPlus;" + Environment.NewLine +
+                        "using DSharpPlus.Entities;" + Environment.NewLine +
+                        "using DSharpPlus.EventArgs;" + Environment.NewLine +
+                        "using DSharpPlus.Exceptions;" + Environment.NewLine +
                         Environment.NewLine +
                         "namespace GAFBot" + Environment.NewLine +
                         Environment.NewLine +
@@ -208,6 +211,7 @@ namespace GAFBot
                         MetadataReference.CreateFromFile(typeof(System.Runtime.AssemblyTargetedPatchBandAttribute).Assembly.Location),
                         MetadataReference.CreateFromFile(typeof(DSharpPlus.AsyncEvent).Assembly.Location),
                         MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+                        MetadataReference.CreateFromFile(typeof(System.Collections.Concurrent.Partitioner).Assembly.Location),
                         MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 };
 
@@ -222,8 +226,8 @@ namespace GAFBot
 
                         if (!result.Success)
                         {
-                            Program.Logger.Log("Compiler: Error at compiling", showConsole: Program.Config.Debug);
-                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Program.Logger.Log("Compiler: " + diag.GetMessage(), showConsole: Program.Config.Debug));
+                            Logger.Log("Compiler: Error at compiling", LogLevel.Trace);
+                            result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Logger.Log("Compiler: " + diag.GetMessage(), LogLevel.Trace));
                             return new KeyValuePair<bool, object>(false, null);
                         }
 
@@ -242,7 +246,7 @@ namespace GAFBot
                 }
                 catch (Exception E)
                 {
-                    Program.Logger.Log("Compiler: " + E.ToString(), showConsole: Program.Config.Debug);
+                    Logger.Log("Compiler: " + E.ToString(), LogLevel.Trace);
                     if (ShowErrors)
                         return new KeyValuePair<bool, object>(false, E);
                 }
@@ -254,11 +258,11 @@ namespace GAFBot
         public static class Methods
         {
             public static void ConsoleLine(string Message)                    
-                => Program.Logger.Log(Message);
+                => Logger.Log(Message);
 
-
+            //ToDo
             public static void Log(string line, bool addDate = true, bool addNewLineAtEnd = true, bool showConsole = true, bool logToFile = true)
-                => Program.Logger.Log("InteractiveCoding: " + line, addDate, addNewLineAtEnd, showConsole, logToFile);
+                => Logger.Log("InteractiveCoding: " + line);
 
             public static string GetProps(string beginsWith)
             {
@@ -291,7 +295,7 @@ namespace GAFBot
                 }
                 catch (Exception ex)
                 {
-                    Program.Logger.Log("InteractiveCoding: " + ex.ToString(), showConsole: Program.Config.Debug);
+                    Logger.Log("InteractiveCoding: " + ex.ToString(), LogLevel.Trace);
                 }
             }
 
@@ -321,8 +325,26 @@ namespace GAFBot
 
             public static void SetAccessLevel(ulong id, MessageSystem.AccessLevel accessLevel = MessageSystem.AccessLevel.User)
             {
-                if (Program.MessageHandler.Users.TryGetValue(id, out MessageSystem.User user))
-                    Program.MessageHandler.Users[id].AccessLevel = accessLevel;
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    var buser = context.BotUsers.First(bm => (ulong)bm.DiscordId == id);
+
+                    if (buser == null)
+                        return;
+
+                    buser.AccessLevel = (short)accessLevel;
+
+                    context.BotUsers.Update(buser);
+                    context.SaveChanges();
+                }
+            }
+
+            public static void SetUserName(ulong userId, ulong guildId, string name, string reason = "null")
+            {
+                Log($"InteractiveCoding: Setting {userId} id nickname to {name}");
+                var member = GetMember(userId, guildId);
+                member.ModifyAsync(nickname: name, reason: reason).Wait();
+                Log($"InteractiveCoding: Setted {userId} id nickname to {name}");
             }
 
             public static void SetAccess(ulong id, int accessLevel)
@@ -356,26 +378,21 @@ namespace GAFBot
             {
                 try
                 {
-                    Program.Logger.Log($"InteractiveCoding: Assigning role {id} : {guildid} : {roleid} : {reason}", showConsole: Program.Config.Debug);
+                    Logger.Log($"InteractiveCoding: Assigning role {id} : {guildid} : {roleid} : {reason}", LogLevel.Trace);
                     var client = GetClient();
                     var guild = GetGuild(guildid);
                     var member = guild.GetMemberAsync(id).Result;
                     var role = guild.GetRole(roleid);
 
                     member.GrantRoleAsync(role, reason).Wait();
-                    Program.Logger.Log("InteractiveCoding: Assigned role", showConsole: Program.Config.Debug);
+                    Logger.Log("InteractiveCoding: Assigned role", LogLevel.Trace);
                 }
                 catch (Exception ex)
                 {
-                    Program.Logger.Log("InteractiveCoding: " + ex.ToString(), showConsole: Program.Config.Debug);
-
+                    Logger.Log("InteractiveCoding: " + ex.ToString(), LogLevel.Trace);
                 }
             }
-
-            public static void abc()
-            {
-                Coding.Methods.React(147255853341212672, 581875191550836887, ":monkaS:");
-            }
+            
 
             public static bool CreateRole(DSharpPlus.DiscordClient client, ulong GuildID, string RoleName, int r, int g, int b)
             {
@@ -386,10 +403,7 @@ namespace GAFBot
             }
 
             #endregion
-
-            public static void ReloadConfig(bool reload = false)
-                => Program.LoadConfig(reload);
-
+            
             public static Timer MuteTimer;
             public static List<MuteInfo> Mutes;
 

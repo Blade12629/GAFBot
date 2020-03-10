@@ -1,5 +1,7 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GAFBot.Commands
@@ -60,17 +62,23 @@ namespace GAFBot.Commands
 
                                                 string newName = e.AfterCMD.Remove(0, paramLength);
 
-
-
-                                                User user = GetUser(userId);
-
-                                                if (user == null)
+                                                using (Database.GAFContext context = new Database.GAFContext())
                                                 {
-                                                    Coding.Methods.SendMessage(e.ChannelID, $"Could not find user " + userId);
-                                                    return;
+                                                    BotUsers user = context.BotUsers.First(u => (ulong)u.DiscordId == userId);
+
+                                                    if (user == null)
+                                                    {
+                                                        Coding.Methods.SendMessage(e.ChannelID, $"Could not find user " + userId);
+                                                        return;
+                                                    }
+
+                                                    user.OsuUsername = newName;
+
+                                                    context.BotUsers.Update(user);
+                                                    context.SaveChanges();
+
                                                 }
 
-                                                user.OsuUserName = newName;
                                                 Coding.Methods.SendMessage(e.ChannelID, $"Set user {userId} osu name to {newName}");
                                                 break;
                                             }
@@ -86,15 +94,22 @@ namespace GAFBot.Commands
                                                     return;
                                                 }
 
-                                                User user = GetUser(userId);
-
-                                                if (user == null)
+                                                using (Database.GAFContext context = new Database.GAFContext())
                                                 {
-                                                    Coding.Methods.SendMessage(e.ChannelID, $"Could not find user " + userId);
-                                                    return;
+                                                    BotUsers user = context.BotUsers.First(u => (ulong)u.DiscordId == userId);
+
+                                                    if (user == null)
+                                                    {
+                                                        Coding.Methods.SendMessage(e.ChannelID, $"Could not find user " + userId);
+                                                        return;
+                                                    }
+
+                                                    user.IsVerified = verified;
+
+                                                    context.BotUsers.Update(user);
+                                                    context.SaveChanges();
                                                 }
 
-                                                user.Verified = verified;
                                                 Coding.Methods.SendMessage(e.ChannelID, $"Set user {userId} verified to {verified}");
                                             }
                                             break;
@@ -113,21 +128,8 @@ namespace GAFBot.Commands
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log(ex.ToString(), LogLevel.Trace);
             }
-        }
-
-        private User GetUser(ulong userid)
-        {
-            User user = null;
-
-            if (!Program.MessageHandler.Users.ContainsKey(userid))
-                return null;
-
-            while (!Program.MessageHandler.Users.TryGetValue(userid, out user))
-                Task.Delay(5).Wait();
-
-            return user;
         }
 
         private enum VerificationEnum

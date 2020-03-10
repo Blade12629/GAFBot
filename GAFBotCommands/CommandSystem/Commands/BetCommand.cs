@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,12 +25,16 @@ namespace GAFBot.Commands
             {
                 ulong[] channels = new ulong[2]
                 {
-                    Program.Config.BetChannel,
-                    Program.Config.DevChannel 
+                    (ulong)Program.Config.BetChannel,
+                    (ulong)Program.Config.DevChannel 
                 };
-                User user = null;
 
-                if (!Program.MessageHandler.Users.TryGetValue(e.DUserID, out user))
+                BotUsers user;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                    user = context.BotUsers.First(u => (ulong)u.DiscordId == e.DUserID);
+
+                if (user == null)
                 {
                     Coding.Methods.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
                     return;
@@ -37,7 +42,7 @@ namespace GAFBot.Commands
                 
                 if (!channels.Contains(e.ChannelID))
                 {
-                    if (user.AccessLevel != AccessLevel.Admin)
+                    if ((AccessLevel)user.AccessLevel != AccessLevel.Admin)
                     {
                         Coding.Methods.SendMessage(e.ChannelID, "You can only bet in #bet_channel!");
                         return;
@@ -66,7 +71,10 @@ namespace GAFBot.Commands
                 {
                     if (e.AfterCMD.ToLower().StartsWith("list"))
                     {
-                        List<Gambling.Betting.Bet> bets = Program.BettingHandler.ActiveBets.FindAll(b => b.DiscordUserId == e.DUserID);
+                        List<BotBets> bets;
+
+                        using (Database.GAFContext context = new Database.GAFContext())
+                            bets = context.BotBets.Where(b => (ulong)b.DiscordUserId == e.DUserID).ToList();
 
                         if (bets == null || bets.Count == 0)
                         {
@@ -77,7 +85,7 @@ namespace GAFBot.Commands
                             embedBuilder.Description = "Your current bets";
 
                         for (int i = 0; i < bets.Count; i++)
-                            embedBuilder.AddField($"Bet {i + 1}", $"{bets[i].MatchId} : {bets[i].Team}");
+                            embedBuilder.AddField($"Bet {i + 1}", $"{bets[i].Matchid} : {bets[i].Team}");
 
                         var channel = Program.Client.GetChannelAsync(e.ChannelID).Result;
                         Program.Client.SendMessageAsync(channel, embed: embedBuilder.Build());
@@ -103,7 +111,7 @@ namespace GAFBot.Commands
                     }
                     else if (e.AfterCMD.ToLower().StartsWith("_admin"))
                     {
-                        if (Program.MessageHandler.Users[e.DUserID].AccessLevel != AccessLevel.Admin)
+                        if ((AccessLevel)user.AccessLevel != AccessLevel.Admin)
                             return;
 
                         //!bet _admin
@@ -121,19 +129,6 @@ namespace GAFBot.Commands
                             Program.MessageHandler.FakeTrigger(split[0].TrimStart(' ').TrimEnd(' '), split[1].TrimStart(' ').TrimEnd(' '), split[2].TrimStart(' ').TrimEnd(' '));
 
                             Coding.Methods.SendMessage(e.ChannelID, $"Fake triggered");
-                        }
-                        else if (newmessage.ToLower().StartsWith("points"))
-                        {
-                            if (newmessage.Length <= "points ".Length)
-                                Coding.Methods.SendMessage(e.ChannelID, "Current reward points are: " + Gambling.Betting.BettingHandler.CurrentReward);
-                            else if (int.TryParse(newmessage.Remove(0, "points ".Length), out int pointVal))
-                            {
-                                Gambling.Betting.BettingHandler.CurrentReward = pointVal;
-                                Coding.Methods.SendMessage(e.ChannelID, "Current reward points set to: " + pointVal);
-                            }
-                            else
-                                Coding.Methods.SendMessage(e.ChannelID, "Current reward points are: " + Gambling.Betting.BettingHandler.CurrentReward);
-
                         }
 
                         return;

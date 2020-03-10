@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,12 +25,16 @@ namespace GAFBot.Commands
             {
                 ulong[] channels = new ulong[2]
                 {
-                    Program.Config.BetChannel, //#bet_channel
-                    Program.Config.DevChannel //#skyfly-room
+                    (ulong)Program.Config.BetChannel, //#bet_channel
+                    (ulong)Program.Config.DevChannel //#skyfly-room
                 };
-                User user = null;
 
-                if (!Program.MessageHandler.Users.TryGetValue(e.DUserID, out user))
+                BotUsers user;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                    user = context.BotUsers.First(u => (ulong)u.DiscordId == e.DUserID);
+
+                if (user == null)
                 {
                     Coding.Methods.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
                     return;
@@ -37,7 +42,7 @@ namespace GAFBot.Commands
 
                 if (!channels.Contains(e.ChannelID))
                 {
-                    if (user.AccessLevel != AccessLevel.Admin)
+                    if ((AccessLevel)user.AccessLevel != AccessLevel.Admin)
                     {
                         Coding.Methods.SendMessage(e.ChannelID, "You can only use this command in #bet_channel!");
                         return;
@@ -46,7 +51,7 @@ namespace GAFBot.Commands
                         Coding.Methods.SendMessage(e.ChannelID, "Bypassed channel restriction due to admin status");
                 }
 
-                Program.Logger.Log("!points executed", showConsole: Program.Config.Debug);
+                Logger.Log("!points executed", LogLevel.Trace);
 
                 DSharpPlus.Entities.DiscordEmbedBuilder builder;
                 var client = Coding.Methods.GetClient();
@@ -71,12 +76,15 @@ namespace GAFBot.Commands
                     builder = new DSharpPlus.Entities.DiscordEmbedBuilder();
                     builder.Title = "Top 10 points ranking";
 
-                    List<User> sortedUsers = Program.MessageHandler.Users.Values.OrderByDescending(u => u.Points).ToList();
+                    List<BotUsers> sortedUsers;
+                    using (Database.GAFContext context = new Database.GAFContext())
+                        sortedUsers = context.BotUsers.OrderByDescending(u => u.Points).ToList();
+
                     builder.Description = "Points ordered by descending";
                     string field = "";
 
                     for (int i = 0; i < 10; i++)
-                        field += $"{i + 1}: {GetName(client, sortedUsers[i].DiscordID)} ({sortedUsers[i].DiscordID}): {sortedUsers[i].Points}{Environment.NewLine}";
+                        field += $"{i + 1}: {GetName(client, (ulong)sortedUsers[i].DiscordId)} ({sortedUsers[i].DiscordId}): {sortedUsers[i].Points}{Environment.NewLine}";
 
                     field = field.Remove(builder.Description.Length - 1, 1);
                     builder.AddField("Top10", field);
@@ -88,12 +96,15 @@ namespace GAFBot.Commands
                     builder = new DSharpPlus.Entities.DiscordEmbedBuilder();
                     builder.Title = "Top last points ranking";
 
-                    List<User> sortedUsers = Program.MessageHandler.Users.Values.OrderBy(u => u.Points).ToList();
+                    List<BotUsers> sortedUsers;
+                    using (Database.GAFContext context = new Database.GAFContext())
+                        sortedUsers = context.BotUsers.OrderBy(u => u.Points).ToList();
+
                     builder.Description = "Points ordered by ascending";
                     string field = "";
 
                     for (int i = 0; i < 11; i++)
-                        field += $"{sortedUsers.Count - i - 1}: {GetName(client, sortedUsers[i].DiscordID)} ({sortedUsers[i].DiscordID}): {sortedUsers[i].Points}{Environment.NewLine}";
+                        field += $"{sortedUsers.Count - i - 1}: {GetName(client, (ulong)sortedUsers[i].DiscordId)} ({sortedUsers[i].DiscordId}): {sortedUsers[i].Points}{Environment.NewLine}";
 
                     field = field.Remove(builder.Description.Length - 1, 1);
                     builder.AddField("Top last", field);
@@ -104,7 +115,7 @@ namespace GAFBot.Commands
                     GetUserPointsById(targetUser);
                 else if (e.AfterCMD.StartsWith("<@"))
                 {
-                    Program.Logger.Log("Getting points by mention");
+                    Logger.Log("Getting points by mention");
                     string mention = e.AfterCMD.TrimStart('<', '@', '!');
                     mention = mention.Remove(mention.ToList().FindIndex(c => c.Equals('>')), 1);
 
@@ -117,9 +128,9 @@ namespace GAFBot.Commands
                     Console.WriteLine("Getting points for user —" + result + "—");
                     GetUserPointsById(result);
                 }
-                else if (user.AccessLevel == AccessLevel.Admin)
+                else if ((AccessLevel)user.AccessLevel == AccessLevel.Admin)
                 {
-                    if (e.AfterCMD.ToLower().StartsWith("_set") && user.AccessLevel == AccessLevel.Admin)
+                    if (e.AfterCMD.ToLower().StartsWith("_set") && (AccessLevel)user.AccessLevel == AccessLevel.Admin)
                     {
                         e.AfterCMD = e.AfterCMD.Remove(0, "_set ".Length);
 
@@ -127,22 +138,40 @@ namespace GAFBot.Commands
 
                         if (ulong.TryParse(split[0], out ulong userId))
                         {
-                            if (split[1].ToLower().Equals("minvalue"))
+                            using (Database.GAFContext context = new Database.GAFContext())
                             {
-                                Program.MessageHandler.Users[userId].Points = int.MinValue;
-                                return;
-                            }
-                            else if (split[1].ToLower().Equals("maxvalue"))
-                            {
-                                Program.MessageHandler.Users[userId].Points = int.MaxValue;
-                                return;
-                            }
+                                if (split[1].ToLower().Equals("minvalue"))
+                                {
+                                    user.Points = int.MinValue;
 
-                            if (int.TryParse(split[1], out int newVal))
-                                Program.MessageHandler.Users[userId].Points = newVal;
+                                    context.BotUsers.Update(user);
+                                    context.SaveChanges();
+
+                                    return;
+                                }
+                                else if (split[1].ToLower().Equals("maxvalue"))
+                                {
+                                    user.Points = int.MaxValue;
+
+                                    context.BotUsers.Update(user);
+                                    context.SaveChanges();
+
+                                    return;
+                                }
+
+                                if (int.TryParse(split[1], out int newVal))
+                                {
+                                    user.Points = newVal;
+
+                                    context.BotUsers.Update(user);
+                                    context.SaveChanges();
+
+                                    return;
+                                }
+                            }
                         }
                     }
-                    else if (e.AfterCMD.ToLower().StartsWith("_add") && user.AccessLevel == AccessLevel.Admin)
+                    else if (e.AfterCMD.ToLower().StartsWith("_add") && (AccessLevel)user.AccessLevel == AccessLevel.Admin)
                     {
                         e.AfterCMD = e.AfterCMD.Remove(0, "_add ".Length);
 
@@ -152,7 +181,13 @@ namespace GAFBot.Commands
                         {
                             if (int.TryParse(split[1], out int newVal))
                             {
-                                Program.MessageHandler.Users[userId].Points += newVal;
+                                user.Points = newVal;
+
+                                using (Database.GAFContext context = new Database.GAFContext())
+                                {
+                                    context.BotUsers.Update(user);
+                                    context.SaveChanges();
+                                }
                             }
                         }
                     }
@@ -170,17 +205,22 @@ namespace GAFBot.Commands
 
                 void GetUserPointsById(ulong targetUserId)
                 {
-                    if (Program.MessageHandler.Users.TryGetValue(targetUserId, out User targetUser))
-                        GetUserPoints(targetUser);
+                    BotUsers us;
+
+                    using (Database.GAFContext context = new Database.GAFContext())
+                        us = context.BotUsers.First(b => (ulong)b.DiscordId == targetUserId);
+
+                    if (us != null)
+                        GetUserPoints(us);
                 }
 
-                void GetUserPoints(User targetUser)
+                void GetUserPoints(BotUsers targetUser)
                 {
                     if (targetUser == null)
                         return;
 
                     builder = new DSharpPlus.Entities.DiscordEmbedBuilder();
-                    builder.Title = $"Point Information for user {GetName(client, targetUser.DiscordID)} ({targetUser.DiscordID})";
+                    builder.Title = $"Point Information for user {GetName(client, (ulong)targetUser.DiscordId)} ({targetUser.DiscordId})";
                     builder.Description = $"Points: {targetUser.Points}";
 
                     channel.SendMessageAsync(embed: builder.Build()).Wait();
@@ -188,7 +228,7 @@ namespace GAFBot.Commands
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log(ex.ToString(), LogLevel.Trace);
             }
         }
 

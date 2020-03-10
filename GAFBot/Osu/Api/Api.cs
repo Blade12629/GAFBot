@@ -7,8 +7,45 @@ namespace GAFBot.Osu.Api
 {
     public class Api
     {
-        private static string API_Key { get { return Program.Config.OsuApiKey; } }
+        private static string API_Key { get { return Program.DecryptString(Program.Config.OsuApiKeyEncrypted); } }
         private static string API_URL = "https://osu.ppy.sh/api/";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="setid"></param>
+        /// <returns></returns>
+        public static Json_Get_Beatmaps GetBeatmaps(int id = -1, int setid = -1, int mods = 0)
+        {
+            Console.WriteLine("API: Download initiated for id/setid/mods: " + id + "/" + setid + "/" + mods);
+
+            if (id > 0 && setid > 0 || id < 1 && setid < 1)
+                return null;
+            
+            string idstring = "";
+
+            if (id > 0)
+                idstring = "&b=" + id;
+            else
+                idstring = "&s=" + setid;
+            
+            string url = string.Format("{0}get_beatmaps?k={1}{2}&m=0&limit=30&mods={3}", API_URL, API_Key, idstring, mods);
+
+            Console.WriteLine("API: Download from " + url);
+
+            string jsonInput = null;
+
+            using (WebClient webClient = new WebClient())
+            {
+                jsonInput = webClient.DownloadString(url);
+            }
+
+            if (string.IsNullOrEmpty(jsonInput))
+                return null;
+
+            return new Json_Get_Beatmaps() { Beatmaps = Newtonsoft.Json.JsonConvert.DeserializeObject<Json_Get_Beatmaps.Beatmap[]>(jsonInput) };
+        }
 
         // Parameters: k* api key, mp* matchid | * = required
         /// <summary>
@@ -63,6 +100,9 @@ namespace GAFBot.Osu.Api
             return WriteJson(jsonInput, new Json_Get_Beatmap()) as Json_Get_Beatmap;
         }
 
+        public static string GetUserName(int user)
+            => GetUser(user)?.username ?? "";
+
         /// <summary>
         /// writes a json to <see cref="T"/>
         /// </summary>
@@ -85,9 +125,49 @@ namespace GAFBot.Osu.Api
             }
             catch (Exception ex)
             {
-                Program.Logger.Log("OsuApi: " + ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log("OsuApi: " + ex.ToString(), LogLevel.Trace);
                 return null;
             }
+        }
+
+        [Flags]
+        public enum Mods
+        {
+            None = 0,
+            NF = 1,
+            EZ = 2,
+            TouchDevice = 4,
+            HD = 8,
+            HR = 16,
+            SD = 32,
+            DT = 64,
+            RLX = 128,
+            HT = 256,
+            NC = 512, // Only set along with DoubleTime. i.e: NC only gives 576
+            FL = 1024,
+            AUTO = 2048,
+            SO = 4096,
+            AP = 8192,    // Autopilot
+            PF = 16384, // Only set along with SuddenDeath. i.e: PF only gives 16416  
+            Key4 = 32768,
+            Key5 = 65536,
+            Key6 = 131072,
+            Key7 = 262144,
+            Key8 = 524288,
+            FadeIn = 1048576,
+            Random = 2097152,
+            Cinema = 4194304,
+            Target = 8388608,
+            Key9 = 16777216,
+            KeyCoop = 33554432,
+            Key1 = 67108864,
+            Key3 = 134217728,
+            Key2 = 268435456,
+            ScoreV2 = 536870912,
+            LastMod = 1073741824,
+            KeyMod = Key1 | Key2 | Key3 | Key4 | Key5 | Key6 | Key7 | Key8 | Key9 | KeyCoop,
+            FreeModAllowed = NF | EZ | HD | HR | SD | FL | FadeIn | RLX | AP | SO | KeyMod,
+            ScoreIncreaseMods = HD | HR | DT | FL | FadeIn
         }
     }
 }

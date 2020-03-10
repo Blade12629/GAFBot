@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
 using System.Linq;
 
@@ -30,7 +31,7 @@ namespace GAFBot.Commands
                         return;
 
                     var dmember = Coding.Methods.GetMember(e.DUserID, e.GuildID.Value);
-                    var roleList = dmember.Roles.Where(r => r.Id == Program.Config.RefereeRoleId);
+                    var roleList = dmember.Roles.Where(r => r.Id == (ulong)Program.Config.RefereeRoleId);
 
                     if (roleList.Count() <= 0)
                         return;
@@ -39,12 +40,15 @@ namespace GAFBot.Commands
                 string discordUser = "";
                 string discordStatus = "";
                 ulong discordId = 0;
-                
-                User user = Program.MessageHandler.Users.Values.FirstOrDefault(u => u.Verified && u.OsuUserName.Equals(e.AfterCMD.Replace(' ', '_'), StringComparison.CurrentCultureIgnoreCase));
 
-                if (user != default(User))
+                BotUsers user;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                    user = context.BotUsers.First(u => u.OsuUsername.Equals(e.AfterCMD.Replace(' ', '_'), StringComparison.CurrentCultureIgnoreCase));
+
+                if (user != null)
                 {
-                    var duser = Coding.Methods.GetUser(user.DiscordID);
+                    var duser = Coding.Methods.GetUser((ulong)user.DiscordId);
                     discordUser = duser.Username;
                     discordId = duser.Id;
 
@@ -75,7 +79,7 @@ namespace GAFBot.Commands
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), logToFile: false);
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
             }
         }
     }

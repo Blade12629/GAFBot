@@ -47,7 +47,7 @@ namespace GAFBot.Commands
                 if (activator.Equals('>'))
                 {
                     Console.WriteLine(">");
-                    TextCommand.OnTextCommand(arg);
+                    //TextCommand.OnTextCommand(arg);
                     return true;
                 }
 
@@ -56,9 +56,22 @@ namespace GAFBot.Commands
                 if (cmd == null)
                     return false;
 
-
                 if ((int)cmd.AccessLevel > (int)access)
                     return false;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    int dbid = context.BotMaintenance.Max(m => m.Id);
+                    var maint = context.BotMaintenance.FirstOrDefault(m => m.Id == dbid);
+
+                    if (maint.Enabled && access < AccessLevel.Admin)
+                    {
+                        Coding.Methods.ChannelMessage(chid, "Bot is currently in maintenance, please try again later" + Environment.NewLine +
+                                                            "Info: " + maint.Notification ?? "no information");
+
+                        return false;
+                    }
+                }
 
                 cmd.Activate(arg);
 
@@ -66,7 +79,7 @@ namespace GAFBot.Commands
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log(ex.ToString(), LogLevel.Trace);
                 return false;
             }
         }
@@ -117,7 +130,7 @@ namespace GAFBot.Commands
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log(ex.ToString(), LogLevel.Trace);
                 return false;
             }
         }

@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +29,8 @@ namespace GAFBot.Commands
             }
             else if (e.AfterCMD.StartsWith("verifications"))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Currently verified players: " + Program.MessageHandler.Users.Values.Count(u => u.Verified));
+                using (Database.GAFContext context = new Database.GAFContext())
+                    Coding.Methods.SendMessage(e.ChannelID, "Currently verified players: " + context.BotUsers.Where(bu => bu.IsVerified));
                 return;
             }
             else if (!ulong.TryParse(e.AfterCMD, out userid))
@@ -44,24 +46,21 @@ namespace GAFBot.Commands
                 }
             }
 
-            if (Program.MessageHandler.Users.ContainsKey(userid))
+            BotUsers user;
+
+            using (Database.GAFContext context = new Database.GAFContext())
+                    user = context.BotUsers.First(u => (ulong)u.DiscordId == userid);
+
+            if (user == null)
             {
-                User user = null;
-
-                while (!Program.MessageHandler.Users.TryGetValue(userid, out user))
-                    System.Threading.Tasks.Task.Delay(5).Wait();
-
-                if (user == null)
-                {
-                    Coding.Methods.SendMessage(e.ChannelID, "Could not get user");
-                    return;
-                }
-
-                var duser = Coding.Methods.GetUser(userid);
-
-                string responseStr = $"```{Environment.NewLine}User: {duser.Username} ({user.DiscordID}){Environment.NewLine}Access: {user.AccessLevel}{Environment.NewLine}Points:{user.Points}{Environment.NewLine}Registered:{user.RegisteredOn}{Environment.NewLine}Osu:{user.OsuUserName ?? "null"}{Environment.NewLine}Verified:{user.Verified}{Environment.NewLine}```";
-                Coding.Methods.SendMessage(e.ChannelID, responseStr);
+                Coding.Methods.SendMessage(e.ChannelID, "Could not get user");
+                return;
             }
+
+            var duser = Coding.Methods.GetUser(userid);
+
+            string responseStr = $"```{Environment.NewLine}User: {duser.Username} ({user.DiscordId}){Environment.NewLine}Access: {user.AccessLevel}{Environment.NewLine}Points:{user.Points}{Environment.NewLine}Registered:{user.RegisteredOn}{Environment.NewLine}Osu:{user.OsuUsername ?? "null"}{Environment.NewLine}Verified:{user.IsVerified}{Environment.NewLine}```";
+            Coding.Methods.SendMessage(e.ChannelID, responseStr);
         }
     }
 }

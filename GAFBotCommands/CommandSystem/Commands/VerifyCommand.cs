@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace GAFBot.Commands
         public string CMD { get => "verify"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
-        public Verification.Osu.VerificationHandler VerificationHandler { get { return Program.VerificationHandler; } }
+        public Verification.Osu.IVerificationHandler VerificationHandler { get { return Modules.ModuleHandler.Get("verification") as Verification.Osu.IVerificationHandler; } }
 
         public static void Init()
         {
@@ -28,49 +29,81 @@ namespace GAFBot.Commands
                 var privChannel = Coding.Methods.GetPrivChannel(e.DUserID);
                 var dchannel = Coding.Methods.GetChannel(e.ChannelID);
 
-                User user = null;
-                while (!Program.MessageHandler.Users.TryGetValue(e.DUserID, out user))
-                    System.Threading.Tasks.Task.Delay(5).Wait();
-                
-                if (Program.VerificationHandler.IsUserVerified(e.DUserID))
+                if (e.AfterCMD.StartsWith("user", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, $"You already have been Verified (osu: {user.OsuUserName})");
+                    if (!e.GuildID.HasValue)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "You can only use this in a guild chat!");
+                        return;
+                    }
+
+                    string ulongStr = e.AfterCMD.Remove(0, 5);
+
+                    if (!ulong.TryParse(ulongStr, out ulong duserId))
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, $"Could not parse {duserId} to ulong");
+                        return;
+                    }
+
+                    var dmember = Coding.Methods.GetMember(duserId, e.GuildID.Value);
+
+                    using (Database.GAFContext context = new Database.GAFContext())
+                    {
+                        BotUsers buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
+
+                        if (buser == null)
+                            Program.MessageHandler.Register(Coding.Methods.GetUser(duserId), (ulong)e.GuildID);
+
+                        buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
+
+                        buser.IsVerified = true;
+                        context.BotUsers.Update(buser);
+
+                        BotVerifications bver = context.BotVerifications.FirstOrDefault(bv => (ulong)bv.DiscordUserId == duserId);
+
+                        if (bver != null)
+                            context.BotVerifications.Remove(bver);
+
+                        context.SaveChanges();
+                    }
+
+                    if (Program.Config.SetVerifiedRole)
+                        Coding.Methods.AssignRole(duserId, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId, "Verified, bypass");
+
+
+                    Coding.Methods.SendMessage(e.ChannelID, "Verified " + duserId);
+                    return;
+                }
+
+                BotUsers user;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                    user = context.BotUsers.FirstOrDefault(u => (ulong)u.DiscordId == e.DUserID);
+
+                if (user != null && user.IsVerified)
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, $"You already have been Verified (osu: {user.OsuUsername})");
                     return;
                 }
                 
-                if (Program.VerificationHandler.CanBypass(e.DUserID))
-                {
-                    if (string.IsNullOrEmpty(e.AfterCMD))
-                    {
-                        Coding.Methods.SendMessage(e.ChannelID, "Due to bypass settings you only need to set your account, please type: !verify Your_Osu_Account_Name");
-                        return;
-                    }
-                    else
-                    {
-                        VerificationHandler.VerifyUser(e.DUserID, e.AfterCMD);
-                        Coding.Methods.SendMessage(e.ChannelID, "Your osu account has been confirmed due to current bypass settings");
-                        return;
-                    }
-                }
-                
-                (string, string) result = VerificationHandler.StartVerification(e.DUserID);
+                string result = VerificationHandler.StartVerification(e.DUserID);
 
-                if (result.Item1.Equals("v") && result.Item2 == "active")
+                if (result.Equals("active"))
                 {
                     dchannel.SendMessageAsync($"Verification process is already running for you");
                     return;
                 }
-                else if (result.Item1.Equals("e"))
+                else if (result == null)
                 {
-                    dchannel.SendMessageAsync($"Verification failed. please contact skyfly with the following code: ''VerifyCommand.Activate.[{e.AfterCMD}|{e.GuildID}|{VerificationHandler == null}|{result.Item1 ?? "null"}|{result.Item2 ?? "null"}]''").Wait();
+                    dchannel.SendMessageAsync($"Verification failed. please contact skyfly with the following code: ''VerifyCommand.Activate.[{e.AfterCMD}|{e.GuildID}|{VerificationHandler == null}|{result ?? "null"}]''").Wait();
                     return;
                 }
                 
-                privChannel.SendMessageAsync($"Please login to osu! and contact Skyfly (in osu!) with the following: !verify {result.Item1}").Wait();
+                privChannel.SendMessageAsync($"Please login to osu! and contact Skyfly (in osu!) with the following: !verify {result}").Wait();
             }
             catch (Exception ex)
             {
-                Program.Logger.Log(ex.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log(ex.ToString(), LogLevel.Trace);
             }
         }
     }

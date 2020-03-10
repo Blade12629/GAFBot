@@ -19,8 +19,8 @@ namespace GAFBot.Commands
         public void Activate(CommandEventArg e)
         {
             {
-                var dguild = Coding.Methods.GetGuild(Program.Config.DiscordGuildId);
-                var dchannel = Coding.Methods.GetChannel(Program.Config.WelcomeChannel);
+                var dguild = Coding.Methods.GetGuild((ulong)Program.Config.DiscordGuildId);
+                var dchannel = Coding.Methods.GetChannel((ulong)Program.Config.WelcomeChannel);
 
                 try
                 {

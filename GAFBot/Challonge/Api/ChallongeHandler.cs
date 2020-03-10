@@ -18,7 +18,7 @@ namespace GAFBot.Challonge.Api
 
         public ChallongeHandler()
         {
-            Program.Logger.Log($"Challonge: ChallongeHandler created", showConsole: Program.Config.Debug);
+            Logger.Log($"Challonge: ChallongeHandler created", LogLevel.Trace);
 
             Matches = new List<(MatchState, Match)>();
             Participants = new List<Participant>();
@@ -29,11 +29,11 @@ namespace GAFBot.Challonge.Api
         /// </summary>
         public void Update()
         {
-            Program.Logger.Log($"Challonge: Checking for update", showConsole: Program.Config.Debug);
+            Logger.Log($"Challonge: Checking for update", LogLevel.Trace);
 
             if (DateTime.UtcNow.Ticks < NextUpdate.Ticks)
             {
-                Program.Logger.Log($"Challonge: No updates found", showConsole: Program.Config.Debug);
+                Logger.Log($"Challonge: No updates found", LogLevel.Trace);
                 return;
             }
             else
@@ -41,11 +41,11 @@ namespace GAFBot.Challonge.Api
                 LastUpdate = DateTime.UtcNow;
                 NextUpdate = LastUpdate.AddHours(8);
 
-                Program.Logger.Log($"Challonge: Updating, next update " + NextUpdate.ToString(), showConsole: Program.Config.Debug);
+                Logger.Log($"Challonge: Updating, next update " + NextUpdate.ToString(), LogLevel.Trace);
+
+                GetMatches();
+                GetParticipants();
             }
-            
-            GetMatches();
-            GetParticipants();
         }
 
         /// <summary>
@@ -53,10 +53,10 @@ namespace GAFBot.Challonge.Api
         /// </summary>
         public void GetMatches()
         {
-            Program.Logger.Log("Challonge: Loading matches", showConsole: Program.Config.Debug);
+            Logger.Log("Challonge: Loading matches", LogLevel.Trace);
             string tourney = Program.Config.ChallongeTournamentName;
 
-            string matchesStr = $"https://api.challonge.com/v1/tournaments/{tourney}/matches.json?api_key={Program.Config.ChallongeApiKey}";
+            string matchesStr = $"https://api.challonge.com/v1/tournaments/{tourney}/matches.json?api_key={Program.DecryptString(Program.Config.ChallongeApiKeyEncrypted)}";
 
             using (WebClient wc = new WebClient())
             {
@@ -82,7 +82,7 @@ namespace GAFBot.Challonge.Api
                     Matches.Add((MatchState.Open, match));
             }
 
-            Program.Logger.Log("Challonge: Loaded matches", showConsole: Program.Config.Debug);
+            Logger.Log("Challonge: Loaded matches", LogLevel.Trace);
         }
 
         /// <summary>
@@ -90,14 +90,14 @@ namespace GAFBot.Challonge.Api
         /// </summary>
         public void GetParticipants()
         {
-            Program.Logger.Log("Challonge: Loading participants", showConsole: Program.Config.Debug);
+            Logger.Log("Challonge: Loading participants", LogLevel.Trace);
             string tourney = Program.Config.ChallongeTournamentName;
 
             string participantsStr = "";
 
             using (WebClient wc = new WebClient())
             {
-                participantsStr = wc.DownloadString($"https://api.challonge.com/v1/tournaments/{tourney}/participants.json?api_key={Program.Config.ChallongeApiKey}");
+                participantsStr = wc.DownloadString($"https://api.challonge.com/v1/tournaments/{tourney}/participants.json?api_key={Program.DecryptString(Program.Config.ChallongeApiKeyEncrypted)}");
             }
 
             Participant_Json[] participants = Newtonsoft.Json.JsonConvert.DeserializeObject<Participant_Json[]>(participantsStr);
@@ -108,7 +108,7 @@ namespace GAFBot.Challonge.Api
 
             foreach (Participant_Json participantJson in participants)
                 Participants.Add(participantJson.participant);
-            Program.Logger.Log("Challonge: Loaded participants", showConsole: Program.Config.Debug);
+            Logger.Log("Challonge: Loaded participants", LogLevel.Trace);
         }
 
         /// <summary>

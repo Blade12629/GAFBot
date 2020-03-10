@@ -4,6 +4,12 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>C:\Users\unkown\source\repos\Discord_OsuMPAnalyzer\compiled\</OutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="DSharpPlus" Version="3.2.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.0.0" />
@@ -11,9 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="GAFBot">
-      <HintPath>..\GAFBot\bin\Release\netcoreapp2.2\publish\GAFBot.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\GAFBot\GAFBot.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Microsoft.CSharp">
       <HintPath>Microsoft.CSharp</HintPath>
     </Reference>

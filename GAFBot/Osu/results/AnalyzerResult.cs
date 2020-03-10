@@ -7,23 +7,26 @@ namespace GAFBot.Osu.results
 {
     public class AnalyzerResult
     {
+        public int MatchId { get; set; }
+        public string Stage { get; set; }
         public string MatchName { get; set; }
-        /// <summary>
-        /// TeamA, TeamB, Winning
-        /// </summary>
-        public (string, string) TeamNames { get; set; }
         public string WinningTeam { get; set; }
         public int WinningTeamWins { get; set; }
         public string LosingTeam { get; set; }
         public int LosingTeamWins { get; set; }
-        public WinType Win { get; set; }
         public TeamColor WinningTeamColor { get; set; }
-        public bool IsQualifier { get; set; }
-        public Rank[] Ranks { get; set; }
-        public HistoryJson.BeatMap[] Beatmaps { get; set; }
         public DateTime TimeStamp { get; set; }
+        public (string, string) TeamNames { get; set; }
+        
+        public HistoryJson.BeatMap[] Beatmaps { get; set; }
 
-        public BeatmapPlayCount MostPlayedBeatmap { get; set; }
+
+        public Rank[] Ranks { get; set; }
+        public BanInfo[] Bans { get; set; }
+        public Rank[] HighestAverageAccuracyRanking { get; set; }
+        public Rank[] HighestScoresRanking { get; set; }
+
+        
         public HistoryJson.BeatMap HighestScoreBeatmap { get; set; }
 
         public HistoryJson.Score HighestScore { get; set; }
@@ -33,7 +36,7 @@ namespace GAFBot.Osu.results
         public Player HighestAccuracyUser { get; set; }
         public HistoryJson.Score HighestAccuracyScore { get; set; }
 
-        public Rank[] HighestAverageAccuracyRanking { get; set; }
-        public Rank[] HighestScoresRanking { get; set; }
+
+        public Player MVP { get; set; }
     }
 }
