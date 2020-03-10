@@ -82,7 +82,7 @@ namespace GAFBot
 
         static EventWaitHandle _ewh;
 
-        internal static Random Rnd { get; private set; }
+        public static Random Rnd { get; private set; }
         
         static Task _maintenanceTask;
         private static bool _maintenance;

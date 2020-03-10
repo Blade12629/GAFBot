@@ -10,11 +10,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="OsuHistoryEndPoint.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="OsuHistoryEndPoint.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GAFBot\GAFBot.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="OsuHistoryEndPoint">
+      <HintPath>..\OsuHistoryEndPoint.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
