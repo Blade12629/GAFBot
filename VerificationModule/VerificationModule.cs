@@ -187,7 +187,8 @@ namespace VerificationModule
         /// </summary>
         public void Dispose()
         {
-            Stop();   
+            Stop();
+            _userStatusQueue?.Clear();
         }
 
         /// <summary>
@@ -277,23 +278,32 @@ namespace VerificationModule
         /// </summary>
         public void Start()
         {
-            if (IsRunning)
-                return;
+            try
+            {
+                if (IsRunning)
+                    return;
 
-            Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
+                Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
 
-            IsRunning = true;
+                _client = new IrcClient();
+                _client.Connect(Host, Port);
 
-            _client.Connect(Host, Port);
+                while (!_client.IsConnected)
+                    Task.Delay(5).Wait();
 
-            while (!_client.IsConnected)
-                Task.Delay(5).Wait();
+                IsRunning = true;
 
-            _client.IrcCommand(new IrcString($"PASS"), new IrcString(_password));
-            _client.IrcCommand(new IrcString($"NICK"), new IrcString(_user));
+                _client.IrcCommand(new IrcString($"PASS"), new IrcString(_password));
+                _client.IrcCommand(new IrcString($"NICK"), new IrcString(_user));
 
-            Logger.Log("VerificationHandler: Sent Login data", LogLevel.Trace);
-            Enabled = true;
+                Logger.Log("VerificationHandler: Sent Login data", LogLevel.Trace);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
+
+                Task.Delay(-1).Wait();
+            }
         }
 
         /// <summary>
@@ -301,7 +311,7 @@ namespace VerificationModule
         /// </summary>
         public void Stop()
         {
-            if (!IsRunning)
+            if (_client == null || !IsRunning)
                 return;
             
             Logger.Log("VerificationHandler: Stopping irc");
@@ -309,7 +319,6 @@ namespace VerificationModule
             _client.Close();
 
             IsRunning = false;
-            Enabled = true;
         }
         
         /// <summary>

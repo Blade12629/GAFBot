@@ -15,16 +15,11 @@ namespace GAFBot.Modules
         {
             _activeModules = new List<IModule>();
 
-            List<FileInfo> modules = FindModules(Path.Combine(Program.CurrentPath + @"data\"));
+            List<FileInfo> modules = FindModules(Program.CurrentPath);
             InitializeModules(ref modules);
 
             if (_activeModules.Count > 0)
-            {
-                foreach (IModule module in _activeModules)
-                    module.Initialize();
-
                 Program.ExitEvent += Dispose;
-            }
 
             Logger.Log($"Initialized {_activeModules.Count} modules, failed: {modules.Count}", (modules.Count == 0 ? LogLevel.Info : LogLevel.ERROR));
         }
@@ -112,7 +107,7 @@ namespace GAFBot.Modules
         /// <returns>Module if initialized, Null if not initialized</returns>
         private static IModule InitializeType(Type t)
         {
-            if (t.IsAssignableFrom(typeof(IModule)))
+            if (t.GetInterfaces().Any(i => i.Equals(typeof(IModule))))
             {
                 IModule mod = Activator.CreateInstance(t) as IModule;
 

@@ -147,7 +147,7 @@ namespace GAFBot
                     Task.Delay(5).Wait();
 
                 Logger.Log("Exit Event: Invoking Save Event");
-                SaveEvent();
+                SaveEvent?.Invoke();
 
                 if (Client != null)
                 {
@@ -158,14 +158,6 @@ namespace GAFBot
                         Client.DisconnectAsync().Wait();
                         Client.Dispose();
                     }
-                }
-
-                IVerificationHandler verifyHandler = Modules.ModuleHandler.Get("verification") as IVerificationHandler;
-                
-                if (verifyHandler != null && verifyHandler.Enabled)
-                {
-                    Logger.Log("Exit Event: Closing Verification Handler");
-                    verifyHandler.Dispose();
                 }
             };
 
@@ -178,6 +170,9 @@ namespace GAFBot
                 Logger.Initialize();
                 
                 Modules.ModuleHandler.Initialize();
+
+                IVerificationHandler verifyHandler = Modules.ModuleHandler.Get("verification") as IVerificationHandler;
+                Logger.Log("Verified: " + verifyHandler.IsUserVerified("Skyfly"));
 
                 await Task.Delay(-1);
 

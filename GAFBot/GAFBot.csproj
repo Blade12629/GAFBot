@@ -26,6 +26,16 @@
     <PlatformTarget>x64</PlatformTarget>
     <Optimize>true</Optimize>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="OsuHistoryEndPoint.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="OsuHistoryEndPoint.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 	  
 	<ItemGroup>
 	   <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.3" />
