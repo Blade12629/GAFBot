@@ -278,32 +278,23 @@ namespace VerificationModule
         /// </summary>
         public void Start()
         {
-            try
-            {
-                if (IsRunning)
-                    return;
+            if (IsRunning)
+                return;
 
-                Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
+            Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
 
-                _client = new IrcClient();
-                _client.Connect(Host, Port);
+            _client = new IrcClient();
+            _client.Connect(Host, Port);
 
-                while (!_client.IsConnected)
-                    Task.Delay(5).Wait();
+            while (!_client.IsConnected)
+                Task.Delay(5).Wait();
 
-                IsRunning = true;
+            IsRunning = true;
 
-                _client.IrcCommand(new IrcString($"PASS"), new IrcString(_password));
-                _client.IrcCommand(new IrcString($"NICK"), new IrcString(_user));
+            _client.IrcCommand(new IrcString($"PASS"), new IrcString(_password));
+            _client.IrcCommand(new IrcString($"NICK"), new IrcString(_user));
 
-                Logger.Log("VerificationHandler: Sent Login data", LogLevel.Trace);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log(ex.ToString(), LogLevel.ERROR);
-
-                Task.Delay(-1).Wait();
-            }
+            Logger.Log("VerificationHandler: Sent Login data", LogLevel.Trace);
         }
 
         /// <summary>
