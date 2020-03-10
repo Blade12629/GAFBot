@@ -37,7 +37,6 @@ namespace GAFBot
 
         public static Commands.ICommandHandler CommandHandler { get; internal set; }
         public static MessageSystem.MessageHandler MessageHandler { get; internal set; }
-        //public static Verification.Osu.VerificationHandler VerificationHandler { get; internal set; }
         public static Challonge.Api.ChallongeHandler ChallongeHandler { get; internal set; }
         public static Gambling.Betting.BettingHandler BettingHandler { get; internal set; }
 
@@ -460,6 +459,8 @@ namespace GAFBot
 
         #endregion
 
+
+        #region encryption
         private static byte[] _encK;
         private static byte[] _encryptionKey
         {
@@ -545,6 +546,7 @@ namespace GAFBot
                 }
             }
         }
+        #endregion
     }
 }
 
