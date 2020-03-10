@@ -170,12 +170,7 @@ namespace GAFBot
                 Logger.Initialize();
                 
                 Modules.ModuleHandler.Initialize();
-
-                IVerificationHandler verifyHandler = Modules.ModuleHandler.Get("verification") as IVerificationHandler;
-                Logger.Log("Verified: " + verifyHandler.IsUserVerified("Skyfly"));
-
-                await Task.Delay(-1);
-
+                
                 //ToDo, remove soon
                 Localization.Init(CurrentPath + @"\locales.cfg");
 
