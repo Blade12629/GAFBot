@@ -176,6 +176,12 @@ namespace GAFBot
             {
                 LoadEnviromentVariables();
                 Logger.Initialize();
+                
+                Modules.ModuleHandler.Initialize();
+
+                await Task.Delay(-1);
+
+                //ToDo, remove soon
                 Localization.Init(CurrentPath + @"\locales.cfg");
 
 #if DEBUG
@@ -294,7 +300,7 @@ namespace GAFBot
             };
             Logger.Log("Program: Discord client initialized");
         }
-
+        
         [AutoInit(2)]
         public static void LoadApi()
         {
@@ -307,7 +313,6 @@ namespace GAFBot
                 return;
             }
         }
-        
 
         /// <summary>
         /// Initializes the MessageSystem

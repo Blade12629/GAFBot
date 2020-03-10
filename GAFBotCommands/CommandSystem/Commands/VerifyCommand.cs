@@ -25,6 +25,14 @@ namespace GAFBot.Commands
         {
             try
             {
+                Verification.Osu.IVerificationHandler verifyHandler = VerificationHandler;
+
+                if (verifyHandler == null || !verifyHandler.Enabled)
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, "Disabled");
+                    return;
+                }
+
                 var dclient = Coding.Methods.GetClient();
                 var privChannel = Coding.Methods.GetPrivChannel(e.DUserID);
                 var dchannel = Coding.Methods.GetChannel(e.ChannelID);
@@ -86,7 +94,7 @@ namespace GAFBot.Commands
                     return;
                 }
                 
-                string result = VerificationHandler.StartVerification(e.DUserID);
+                string result = verifyHandler.StartVerification(e.DUserID);
 
                 if (result.Equals("active"))
                 {
@@ -95,7 +103,7 @@ namespace GAFBot.Commands
                 }
                 else if (result == null)
                 {
-                    dchannel.SendMessageAsync($"Verification failed. please contact skyfly with the following code: ''VerifyCommand.Activate.[{e.AfterCMD}|{e.GuildID}|{VerificationHandler == null}|{result ?? "null"}]''").Wait();
+                    dchannel.SendMessageAsync($"Verification failed. please contact skyfly with the following code: ''VerifyCommand.Activate.[{e.AfterCMD}|{e.GuildID}|{result ?? "null"}]''").Wait();
                     return;
                 }
                 
