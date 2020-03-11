@@ -9,6 +9,10 @@
     <OutputPath>..\compiled\</OutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutputPath>..\compiled\</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="OsuHistoryEndPoint.dll" />
   </ItemGroup>

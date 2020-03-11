@@ -7,6 +7,7 @@ using DSharpPlus.Entities;
 using GAFBot;
 using GAFBot.Database;
 using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using GAFBot.Verification.Osu;
 using NetIrc2;
 using NetIrc2.Events;
@@ -32,8 +33,34 @@ namespace VerificationModule
 
         public void Enable()
         {
-            Initialize();
-            Start();
+            try
+            {
+                Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
+
+                _userStatusQueue = new List<(DSharpPlus.Entities.DiscordMessage, string, string)>();
+
+                BotConfig cfg;
+                using (GAFContext context = new GAFContext())
+                {
+                    int cfgIndex = context.BotConfig.Max(c => c.Id);
+                    cfg = context.BotConfig.First(c => c.Id == cfgIndex);
+                }
+
+                SetHost(cfg.OsuIrcHost, cfg.OsuIrcPort);
+                SetAuthentication(cfg.OsuIrcUser, Program.DecryptString(cfg.OsuIrcPasswordEncrypted));
+
+                Program.SaveEvent += () =>
+                {
+                    Stop();
+                    Start();
+                };
+
+                Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
+            }
         }
 
         public void Disable()
@@ -196,23 +223,7 @@ namespace VerificationModule
         /// </summary>
         public void Initialize()
         {
-            _userStatusQueue = new List<(DSharpPlus.Entities.DiscordMessage, string, string)>();
-
-            BotConfig cfg;
-            using (GAFContext context = new GAFContext())
-            {
-                int cfgIndex = context.BotConfig.Min(c => c.Id);
-                cfg = context.BotConfig.First(c => c.Id == cfgIndex);
-            }
-
-            SetHost(cfg.OsuIrcHost, cfg.OsuIrcPort);
-            SetAuthentication(cfg.OsuIrcUser, Program.DecryptString(cfg.OsuIrcPasswordEncrypted));
-            
-            Program.SaveEvent += () =>
-            {
-                Stop();
-                Start();
-            };
+            Enable();
         }
 
         /// <summary>
@@ -281,9 +292,8 @@ namespace VerificationModule
             if (IsRunning)
                 return;
 
-            Logger.Log("VerificationHandler: Starting irc", LogLevel.Trace);
-
             _client = new IrcClient();
+            _client.GotMessage += ClientGotMessage;
             _client.Connect(Host, Port);
 
             while (!_client.IsConnected)
@@ -374,7 +384,7 @@ namespace VerificationModule
 
             if (buser == null)
             {
-                Program.MessageHandler.Register(Coding.Methods.GetUser(duserid), (ulong)Program.Config.DiscordGuildId);
+                (GAFBot.Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Methods.GetUser(duserid), (ulong)Program.Config.DiscordGuildId);
 
                 using (GAFContext context = new GAFContext())
                     buser = context.BotUsers.First(bu => (ulong)bu.DiscordId == duserid);

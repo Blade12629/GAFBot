@@ -15,6 +15,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Exceptions;
 using GAFBot.Database.Models;
+using GAFBot.MessageSystem;
 using GAFBot.Verification.Osu;
 
 namespace GAFBot
@@ -36,9 +37,8 @@ namespace GAFBot
         public static string ApiAssemblyName { get { return @"\GAFBotApi.dll"; } }
 
         public static Commands.ICommandHandler CommandHandler { get; internal set; }
-        public static MessageSystem.MessageHandler MessageHandler { get; internal set; }
         public static Challonge.Api.ChallongeHandler ChallongeHandler { get; internal set; }
-        public static Gambling.Betting.BettingHandler BettingHandler { get; internal set; }
+        //public static Gambling.Betting.BettingHandler BettingHandler { get; internal set; }
 
         public static void RequestOsuUserStatus(string user, DiscordMessage message, string originalText)
         {
@@ -76,6 +76,14 @@ namespace GAFBot
                 }
 
                 return config;
+            }
+            set
+            {
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    context.BotConfig.Update(value);
+                    context.SaveChanges();
+                }
             }
         }
         public static DiscordClient Client { get; set; }
@@ -274,7 +282,7 @@ namespace GAFBot
             Client.MessageCreated += async (arg) =>
             {
                 if (arg.Author.Id != Client.CurrentUser.Id)
-                    await Task.Run(() => MessageHandler.NewMessage(arg));
+                    await Task.Run(() => (Modules.ModuleHandler.Get("message") as IMessageHandler)?.OnMessageRecieved(arg));
             };
             Client.Ready += async (arg) =>
             {
@@ -282,15 +290,15 @@ namespace GAFBot
             };
             Client.GuildMemberAdded += async (arg) =>
             {
-                await Task.Run(() => MessageHandler.OnUserJoinedGuild(arg));
+                await Task.Run(() => (Modules.ModuleHandler.Get("message") as IMessageHandler)?.OnUserJoinedGuild(arg));
             };
             Client.GuildMemberRemoved += async (arg) =>
             {
-                await Task.Run(() => MessageHandler.OnMemberRemoved(arg));
+                await Task.Run(() => (Modules.ModuleHandler.Get("message") as IMessageHandler)?.OnMemberRemoved(arg));
             };
             Logger.Log("Program: Discord client initialized");
         }
-        
+
         [AutoInit(2)]
         public static void LoadApi()
         {
@@ -303,16 +311,7 @@ namespace GAFBot
                 return;
             }
         }
-
-        /// <summary>
-        /// Initializes the MessageSystem
-        /// </summary>
-        [AutoInit(1)]
-        public static void LoadMessageSystem()
-        {
-            Logger.Log("Program: Initializing messagehandler");
-            MessageHandler = new MessageSystem.MessageHandler();
-        }
+        
         /// <summary>
         /// Initializes the Commands
         /// </summary>
@@ -344,16 +343,7 @@ namespace GAFBot
             ChallongeHandler = new Challonge.Api.ChallongeHandler();
             ChallongeHandler.Update();
         }
-
-        /// <summary>
-        /// Initializes Betting
-        /// </summary>
-        [AutoInit(2)]
-        public static void LoadBetting()
-        {
-            BettingHandler = new Gambling.Betting.BettingHandler();
-        }
-
+        
         #endregion
 
         #region ManualInitialize

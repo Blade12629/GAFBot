@@ -46,7 +46,8 @@ namespace GAFBot.Commands
                 var duser = Coding.Methods.GetUser(e.DUserID);
 
                 if (e.AfterCMD.StartsWith("_test", StringComparison.CurrentCultureIgnoreCase))
-                    Program.MessageHandler.WelcomeMessage(e.ChannelID, Program.Config.WelcomeMessage, duser.Mention);
+                    (Modules.ModuleHandler.Get("message") as IMessageHandler)?.WelcomeMessage(e.ChannelID, Program.Config.WelcomeMessage, duser.Mention);
+
                 else
                 {
                     Program.Config.WelcomeMessage = e.AfterCMD;

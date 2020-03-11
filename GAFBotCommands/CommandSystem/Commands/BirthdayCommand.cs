@@ -28,6 +28,7 @@ namespace GAFBotCommands.CommandSystem.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new BirthdayCommand());
+            Coding.Methods.Log(typeof(BirthdayCommand).Name + " Registered");
 
             _refreshTimer = new Timer()
             {
@@ -125,6 +126,9 @@ namespace GAFBotCommands.CommandSystem.Commands
                 bbday.Day = day;
                 bbday.Month = month;
                 bbday.Year = year;
+
+                context.BotBirthday.Update(bbday);
+                context.SaveChanges();
             }
 
         }

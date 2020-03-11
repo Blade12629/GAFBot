@@ -22,7 +22,8 @@ namespace GAFBot.Commands
         {
             try
             {
-                AccessLevel access = Program.MessageHandler.GetAccessLevel(e.DUserID);
+
+                AccessLevel access = (Modules.ModuleHandler.Get("message") as IMessageHandler)?.GetAccessLevel(e.DUserID) ?? AccessLevel.User;
                 var dchannel = Coding.Methods.GetChannel(e.ChannelID);
 
                 if ((int)access <= (int)AccessLevel.Moderator)

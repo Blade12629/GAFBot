@@ -27,7 +27,7 @@ namespace GAFBot.Commands
             {
                 Verification.Osu.IVerificationHandler verifyHandler = VerificationHandler;
 
-                if (verifyHandler == null || !verifyHandler.Enabled)
+                if (verifyHandler == null)
                 {
                     Coding.Methods.SendMessage(e.ChannelID, "Disabled");
                     return;
@@ -60,8 +60,8 @@ namespace GAFBot.Commands
                         BotUsers buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
 
                         if (buser == null)
-                            Program.MessageHandler.Register(Coding.Methods.GetUser(duserId), (ulong)e.GuildID);
-
+                            (Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Methods.GetUser(duserId), (ulong)e.GuildID);
+                        
                         buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
 
                         buser.IsVerified = true;

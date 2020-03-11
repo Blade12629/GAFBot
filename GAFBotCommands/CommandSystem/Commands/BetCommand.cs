@@ -1,4 +1,5 @@
 ﻿using GAFBot.Database.Models;
+using GAFBot.Gambling.Betting;
 using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,11 @@ namespace GAFBot.Commands
         {
             try
             {
+                IBettingHandler bettingHandler = Modules.ModuleHandler.Get("betting") as IBettingHandler;
+
+                if (bettingHandler == null)
+                    return;
+
                 ulong[] channels = new ulong[2]
                 {
                     (ulong)Program.Config.BetChannel,
@@ -94,7 +100,7 @@ namespace GAFBot.Commands
                     else if (e.AfterCMD.ToLower().StartsWith("remove all"))
                     {
                         Coding.Methods.SendMessage(e.ChannelID, "Removing all of your current bets");
-                        Program.BettingHandler.RemoveBets(e.DUserID);
+                        bettingHandler.RemoveBets(e.DUserID);
                         return;
                     }
                     else if (e.AfterCMD.ToLower().StartsWith("remove"))
@@ -106,31 +112,7 @@ namespace GAFBot.Commands
                         }
                         Coding.Methods.SendMessage(e.ChannelID, "Removing your bet on match " + matchId);
 
-                        Program.BettingHandler.RemoveBet(matchId, e.DUserID);
-                        return;
-                    }
-                    else if (e.AfterCMD.ToLower().StartsWith("_admin"))
-                    {
-                        if ((AccessLevel)user.AccessLevel != AccessLevel.Admin)
-                            return;
-
-                        //!bet _admin
-                        string newmessage = e.AfterCMD.Remove(0, "_admin ".Length);
-
-                        //teamA teamB winningTeam
-                        if (newmessage.ToLower().StartsWith("faketrigger"))
-                        {
-                            newmessage = newmessage.Remove(0, "faketrigger ".Length);
-
-                            Coding.Methods.SendMessage(e.ChannelID, $"Trying to fake trigger");
-                            
-                            string[] split = newmessage.Split('|');
-                            
-                            Program.MessageHandler.FakeTrigger(split[0].TrimStart(' ').TrimEnd(' '), split[1].TrimStart(' ').TrimEnd(' '), split[2].TrimStart(' ').TrimEnd(' '));
-
-                            Coding.Methods.SendMessage(e.ChannelID, $"Fake triggered");
-                        }
-
+                        bettingHandler.RemoveBet(matchId, e.DUserID);
                         return;
                     }
                     else if (msgS.Length >= 2 && !int.TryParse(msgS[0], out matchId))
@@ -147,7 +129,7 @@ namespace GAFBot.Commands
                     
                     string team = e.AfterCMD.Remove(0, msgS[0].Length + 1);
 
-                    Program.BettingHandler.AddBet(team, matchId, e.DUserID, e.ChannelID);
+                    bettingHandler.AddBet(team, matchId, e.DUserID, e.ChannelID);
 
                     bool CanBet()
                     {

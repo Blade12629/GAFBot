@@ -17,7 +17,5 @@ namespace GAFBot.MessageSystem
         void StartAnalyzer(MessageCreateEventArgs args, bool sendToApi = true, bool sendToDatabase = true);
         void Register(DiscordUser duser, ulong guildId = 0);
         void OnUserJoinedGuild(GuildMemberAddEventArgs args);
-
-        EventHandler OnMatchEnd { get; set; }
     }
 }

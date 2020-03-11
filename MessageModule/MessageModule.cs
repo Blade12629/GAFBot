@@ -28,7 +28,10 @@ namespace MessageModule
 
         public string ModuleName => "message";
 
-        public EventHandler OnMatchEnd { get; set; }
+        public void Initialize()
+        {
+
+        }
 
         public void Disable()
         {
@@ -42,6 +45,7 @@ namespace MessageModule
 
         public void Enable()
         {
+
         }
 
         public void FakeTrigger(string teama, string teamb, string winningteam)
@@ -290,9 +294,6 @@ namespace MessageModule
             }
         }
 
-        public void Initialize()
-        {
-        }
 
         public void OnMemberRemoved(GuildMemberRemoveEventArgs args)
         {
@@ -664,7 +665,11 @@ namespace MessageModule
                     (string, string) teamNames = analyzerResult.TeamNames;
 
                     Logger.Log($"Executing OnMatchEnd {teamNames.Item1}, {teamNames.Item2}, {winningTeam}", LogLevel.Trace);
-                    Task.Run(() => OnMatchEnd(this, new OnMatchEndArgs(teamNames.Item1, teamNames.Item2, winningTeam)));
+                    Task.Run(() =>
+                    {
+                        GAFBot.Gambling.Betting.IBettingHandler bettingHandler = GAFBot.Modules.ModuleHandler.Get("betting") as GAFBot.Gambling.Betting.IBettingHandler;
+                        bettingHandler?.ResolveBets(teamNames.Item1, teamNames.Item2, winningTeam);
+                    });
                 }
                 catch (Exception ex)
                 {

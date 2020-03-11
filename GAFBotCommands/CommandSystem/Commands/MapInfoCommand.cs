@@ -23,7 +23,7 @@ namespace GAFBot.Commands
             if (!e.AfterCMD.StartsWith("https://osu.ppy.sh/b", StringComparison.CurrentCultureIgnoreCase))
                 return;
 
-            MessageHandler.GetBeatmapInfo(e.AfterCMD, e.ChannelID);
+            (Modules.ModuleHandler.Get("message") as IMessageHandler)?.GetBeatmapInfo(e.AfterCMD, e.ChannelID);
         }
     }
 }
