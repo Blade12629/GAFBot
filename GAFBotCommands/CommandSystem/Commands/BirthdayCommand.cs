@@ -10,7 +10,7 @@ using System.Timers;
 
 namespace GAFBotCommands.CommandSystem.Commands
 {
-    class BirthdayCommand : BaseCommand
+    class BirthdayCommand : ICommand
     {
         public char Activator { get => '!'; }
         public char ActivatorSpecial { get => default(char); }
@@ -42,7 +42,7 @@ namespace GAFBotCommands.CommandSystem.Commands
 
         private static void RefreshTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            if (DateTime.UtcNow.Hour != 0)
+            if (DateTime.UtcNow.Hour != 1)
                 return;
 
             List<BotBirthday> birthdays;
@@ -100,8 +100,6 @@ namespace GAFBotCommands.CommandSystem.Commands
                 return;
             }
 
-            year = Math.Min(31, Math.Max(0, year));
-
             BotBirthday bbday;
 
             using (GAFBot.Database.GAFContext context = new GAFBot.Database.GAFContext())
@@ -120,6 +118,9 @@ namespace GAFBotCommands.CommandSystem.Commands
 
                     context.BotBirthday.Add(bbday);
                     context.SaveChanges();
+
+                    Coding.Methods.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
+                    Logger.Log($"Set birthday of {e.DUserID} to {bbday.Day}/{bbday.Month}/{bbday.Year}");
                     return;
                 }
 
@@ -129,8 +130,10 @@ namespace GAFBotCommands.CommandSystem.Commands
 
                 context.BotBirthday.Update(bbday);
                 context.SaveChanges();
-            }
 
+                Coding.Methods.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
+                Logger.Log($"Set birthday of {e.DUserID} to {bbday.Day}/{bbday.Month}/{bbday.Year}");
+            }
         }
     }
 }
