@@ -19,7 +19,20 @@ namespace VerificationModule
         public string Host { get; set; }
         public int Port { get; set; }
         public bool IsRunning { get; set; }
-        public bool Enabled { get; set; }
+        /// <summary>
+        /// Always enabled
+        /// </summary>
+        public bool Enabled
+        {
+            get
+            {
+                return true;
+            }
+            set
+            {
+
+            }
+        }
 
         private string _user;
         private string _password;

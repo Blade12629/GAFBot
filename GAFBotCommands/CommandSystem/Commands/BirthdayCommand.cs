@@ -56,7 +56,7 @@ namespace GAFBotCommands.CommandSystem.Commands
             //General staff 239677046274392066
             foreach (BotBirthday bday in birthdays)
             {
-                string toSend = $"Happy{(bday.Year == 0 ? "" : $" {bday.Year}.")} birthday <@!{(ulong)bday.DiscordId}>";
+                string toSend = $"Happy{(bday.Year == 0 ? "" : $" {DateTime.UtcNow.Year - bday.Year}.")} birthday <@!{(ulong)bday.DiscordId}>";
                 Coding.Methods.SendMessage(239677046274392066, toSend);
             }
         }

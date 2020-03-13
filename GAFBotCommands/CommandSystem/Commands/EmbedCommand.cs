@@ -1,4 +1,5 @@
-﻿using GAFBot.MessageSystem;
+﻿using DSharpPlus.Entities;
+using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
 
@@ -11,73 +12,164 @@ namespace GAFBot.Commands
         public string CMD { get => "embed"; }
         public AccessLevel AccessLevel => AccessLevel.Moderator;
 
+        private static readonly string _info = "Usage:" + Environment.NewLine +
+                                               "```" + Environment.NewLine + 
+                                               "!embed create channelId embedCode" + Environment.NewLine +
+                                               "!embed edit channelId messageId embedCode" + Environment.NewLine + 
+                                               "```";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new EmbedCommand() as ICommand);
             Coding.Methods.Log(typeof(EmbedCommand).Name + " Registered");
         }
         
-        /*
-         * !embed channelId>R>G>B>Title>Message>Title>Message
-         */
+
+
         public void Activate(CommandEventArg e)
         {
             try
             {
-                string[] split = e.AfterCMD.Split('|');
-
-                if (split == null || split.Length == 0)
-                    return;
-
-                //Values have to be 1 or 0, inbetween somehow bugs
-                float[] rgb = new float[3];
-
-                if (!ulong.TryParse(split[0], out ulong channelId) || !float.TryParse(split[1], out rgb[0]) || !float.TryParse(split[2], out rgb[1]) || !float.TryParse(split[3], out rgb[2]))
-                    return;
-
-                ulong id;
-                ProcessChannelId(ref split[4]);
-                ProcessChannelId(ref split[5]);
-
-                var builder = new DSharpPlus.Entities.DiscordEmbedBuilder()
+                if (!e.GuildID.HasValue)
                 {
-                    Color = new DSharpPlus.Entities.DiscordColor(rgb[0], rgb[1], rgb[2]),
-                    Title = split[4],
-                    Description = split[5]
-                };
-
-                for (int i = 6; i < split.Length; i += 2)
+                    Coding.Methods.SendMessage(e.ChannelID, "This command is only usable in a discord channel");
+                    return;
+                }
+                else if (string.IsNullOrEmpty(e.AfterCMD))
                 {
-                    if (i == split.Length || i + 1 == split.Length)
-                        break;
-
-                    ProcessChannelId(ref split[i]);
-                    ProcessChannelId(ref split[i + 1]);
-
-                    builder.AddField(split[i], split[i + 1]);
+                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    return;
                 }
 
-                var embed = builder.Build();
-                var channel = Coding.Methods.GetChannel(channelId);
-                channel.SendMessageAsync(embed: embed).Wait();
+                string @params = e.AfterCMD;
 
-                void ProcessChannelId(ref string replaceString)
+                int index = @params.IndexOf(' ');
+                if (index <= 1)
                 {
-                    if ((id = GetChannelId(replaceString)) > 0)
+                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    return;
+                }
+
+                string cmdType = @params.Substring(0, index).TrimStart(' ').TrimEnd(' ').ToLower();
+                @params = @params.Remove(0, index + 1);
+
+                string channelIdStr;
+                ulong channelId;
+                ulong messageId;
+                DiscordChannel dchannel;
+                DiscordMessage dmessage;
+                Json.EmbedJson embedJson;
+                DiscordEmbed embed;
+                if (cmdType.Equals("edit"))
+                {
+                    index = @params.IndexOf(' ');
+                    if (index <= 1)
                     {
-                        var ch = Coding.Methods.GetChannel(id);
-
-                        if (ch != null)
-                            replaceString = replaceString.Replace("<#" + ch.Id + ">", ch.Mention);
+                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        return;
                     }
+
+                    channelIdStr = @params.Substring(0, index);
+
+                    @params = @params.Remove(0, index + 1);
+
+                    index = @params.IndexOf(' ');
+                    if (index <= 1)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        return;
+                    }
+
+                    channelIdStr = channelIdStr.Substring(0, index);
+
+                    if (!ulong.TryParse(channelIdStr, out channelId))
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                        return;
+                    }
+
+                    index = @params.IndexOf(' ');
+                    if (index <= 1)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        return;
+                    }
+
+                    string messageIdStr = @params.Substring(0, index);
+                    @params = @params.Remove(0, index + 1);
+                    
+                    if (!ulong.TryParse(messageIdStr, out messageId))
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
+                        return;
+                    }
+
+                    dchannel = Coding.Methods.GetChannel(channelId);
+                    dmessage = dchannel.GetMessageAsync(messageId).Result;
+
+                    if (dmessage == null)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not find message " + messageId);
+                        return;
+                    }
+
+                    embedJson = Newtonsoft.Json.JsonConvert.DeserializeObject<Json.EmbedJson>(@params);
+
+                    if (embedJson == null)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Failed to parse your embed json");
+                        return;
+                    }
+
+                    embed = embedJson.BuildEmbed();
+                    dmessage.ModifyAsync(embedJson.content ?? default(Optional<string>), embed);
+
+                    return;
                 }
+
+                index = @params.IndexOf(' ');
+                if (index <= 1)
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    return;
+                }
+
+                channelIdStr = @params.Substring(0, index);
+                @params = @params.Remove(0, index + 1);
+
+                index = @params.IndexOf(' ');
+                if (index <= 1)
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    return;
+                }
+
+                if (!ulong.TryParse(channelIdStr, out channelId))
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                    return;
+                }
+
+                Logger.Log(channelIdStr + " : " + channelId);
+
+                dchannel = Coding.Methods.GetChannel(channelId);
+                embedJson = Newtonsoft.Json.JsonConvert.DeserializeObject<Json.EmbedJson>(@params);
+
+                if (embedJson == null)
+                {
+                    Coding.Methods.SendMessage(e.ChannelID, "Failed to parse your embed json");
+                    return;
+                }
+
+                embed = embedJson.BuildEmbed();
+                dchannel.SendMessageAsync(embedJson.content, false, embed);
             }
             catch (Exception ex)
             {
-                Coding.Methods.GetChannel(e.ChannelID).SendMessageAsync(ex.ToString() + Environment.NewLine + "parameters:" + Environment.NewLine + "```" + Environment.NewLine + e.AfterCMD + Environment.NewLine + "```").Wait();
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
             }
         }
-        
+
 
         private ulong GetChannelId(string channel)
         {
