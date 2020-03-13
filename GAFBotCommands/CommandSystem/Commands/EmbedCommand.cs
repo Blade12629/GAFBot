@@ -2,6 +2,7 @@
 using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace GAFBot.Commands
 {
@@ -14,8 +15,9 @@ namespace GAFBot.Commands
 
         private static readonly string _info = "Usage:" + Environment.NewLine +
                                                "```" + Environment.NewLine + 
-                                               "!embed create channelId embedCode" + Environment.NewLine +
-                                               "!embed edit channelId messageId embedCode" + Environment.NewLine + 
+                                               "!embed create channelId embedCode/-url:www.example.com/raw/text" + Environment.NewLine +
+                                               "!embed edit channelId messageId embedCode/-url:www.example.com/raw/text" + Environment.NewLine +
+                                               "!embed reverse channelId messageId" + Environment.NewLine +
                                                "```";
 
         public static void Init()
@@ -41,7 +43,21 @@ namespace GAFBot.Commands
                     return;
                 }
 
+                string download = null;
+
+                int urlStart = e.AfterCMD.IndexOf("-url:");
+                string urlString = e.AfterCMD.Remove(0, urlStart + 4);
+
+                if (!string.IsNullOrEmpty(urlString))
+                {
+                    using (WebClient wc = new WebClient())
+                        download = wc.DownloadString(urlString);
+                }
+                
                 string @params = e.AfterCMD;
+
+                if (download != null)
+                    @params = @params.Replace("-url:" + urlString, download);
 
                 int index = @params.IndexOf(' ');
                 if (index <= 1)
@@ -72,15 +88,6 @@ namespace GAFBot.Commands
                     channelIdStr = @params.Substring(0, index);
 
                     @params = @params.Remove(0, index + 1);
-
-                    index = @params.IndexOf(' ');
-                    if (index <= 1)
-                    {
-                        Coding.Methods.SendMessage(e.ChannelID, _info);
-                        return;
-                    }
-
-                    channelIdStr = channelIdStr.Substring(0, index);
 
                     if (!ulong.TryParse(channelIdStr, out channelId))
                     {
@@ -126,6 +133,47 @@ namespace GAFBot.Commands
 
                     return;
                 }
+                else if (cmdType.Equals("reverse"))
+                {
+                    index = @params.IndexOf(' ');
+                    if (index <= 1)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        return;
+                    }
+
+                    channelIdStr = @params.Substring(0, index);
+                    @params = @params.Remove(0, index + 1);
+
+                    if (!ulong.TryParse(channelIdStr, out channelId))
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                        return;
+                    }
+                    
+                    string messageIdStr = @params;
+
+                    if (!ulong.TryParse(messageIdStr, out messageId))
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
+                        return;
+                    }
+
+                    dchannel = Coding.Methods.GetChannel(channelId);
+                    dmessage = dchannel.GetMessageAsync(messageId).Result;
+
+                    if (dmessage == null)
+                    {
+                        Coding.Methods.SendMessage(e.ChannelID, "Could not find message " + messageId);
+                        return;
+                    }
+
+                    var reversed = Json.EmbedJson.ReverseEmbed(dmessage);
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(reversed, Newtonsoft.Json.Formatting.Indented);
+
+                    Coding.Methods.SendMessage(e.ChannelID, "```js" + Environment.NewLine + json + Environment.NewLine + "```");
+                    return;
+                }
 
                 index = @params.IndexOf(' ');
                 if (index <= 1)
@@ -136,9 +184,8 @@ namespace GAFBot.Commands
 
                 channelIdStr = @params.Substring(0, index);
                 @params = @params.Remove(0, index + 1);
-
-                index = @params.IndexOf(' ');
-                if (index <= 1)
+                
+                if (@params.Length <= 1)
                 {
                     Coding.Methods.SendMessage(e.ChannelID, _info);
                     return;

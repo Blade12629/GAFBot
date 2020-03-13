@@ -1,5 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GAFBot.Commands.Json
 {
@@ -8,59 +10,124 @@ namespace GAFBot.Commands.Json
         public string content { get; set; }
         public Embed embed { get; set; }
 
-        public DiscordEmbed BuildEmbed()
+        public static EmbedJson ReverseEmbed(DiscordMessage message)
         {
-            try
-            {
-                Thumbnail thumbnail = embed.thumbnail;
-                Image image = embed.image;
+            DiscordEmbed embed = message.Embeds.ElementAt(0);
 
-                Author author = embed.author;
-                Footer footer = embed.footer;
+            Thumbnail thumbnail = null;
+            Image image = null;
 
-                DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+            Author author = null;
+            Footer footer = null;
+
+            if (embed.Thumbnail != null)
+                thumbnail = new Thumbnail()
                 {
-                    Title = embed.title,
-                    Description = embed.description,
-                    Url = embed.url,
-                    Color = new DiscordColor(embed.color),
-                    Timestamp = embed.timestamp,
-                    ThumbnailUrl = thumbnail?.url ?? null,
-                    ImageUrl = image?.url ?? null,
+                    url = embed.Thumbnail.Url.ToString()
                 };
 
-                if (footer != null)
+            if (embed.Image != null)
+                image = new Image()
                 {
-                    builder.Footer = new DiscordEmbedBuilder.EmbedFooter()
-                    {
-                        IconUrl = footer?.icon_url ?? null,
-                        Text = footer?.text ?? null,
-                    };
-                }
+                    url = embed.Image.Url.ToString()
+                };
 
-                if (author != null)
+            if (embed.Author != null)
+                author = new Author()
                 {
-                    builder.Author = new DiscordEmbedBuilder.EmbedAuthor()
-                    {
-                        IconUrl = author?.icon_url ?? null,
-                        Name = author?.name ?? null,
-                        Url = author?.url ?? null
-                    };
-                }
+                    url = embed.Author.Url.ToString(),
+                    icon_url = embed.Author.IconUrl.ToString(),
+                    name = embed.Author.Name
+                };
 
-                if (embed.fields != null)
+            if (embed.Footer != null)
+                footer = new Footer()
                 {
-                    foreach (Field f in embed.fields)
-                        builder.AddField(f.name, f.value, f?.inline ?? false);
-                }
+                    icon_url = embed.Footer.IconUrl.ToString(),
+                    text = embed.Footer.Text
+                };
 
-                return builder.Build();
-            }
-            catch (Exception ex)
+            List<Field> fields = null;
+
+            if (embed.Fields != null)
             {
-                Logger.Log(ex.ToString(), LogLevel.ERROR);
-                throw ex;
+                fields = new List<Field>();
+
+                foreach (DiscordEmbedField f in embed.Fields)
+                    fields.Add(new Field()
+                    {
+                        inline = f.Inline,
+                        value = f.Value,
+                        name = f.Name
+                    });
             }
+
+            EmbedJson result = new EmbedJson()
+            {
+                content = message.Content,
+                embed = new Embed()
+                {
+                    author = author,
+                    thumbnail = thumbnail,
+                    image = image,
+                    footer = footer,
+                    color = embed.Color.Value,
+                    description = embed.Description,
+                    fields = fields?.ToArray() ?? null,
+                    timestamp = embed.Timestamp?.DateTime ?? DateTime.MinValue,
+                    title = embed.Title,
+                    url = embed.Url?.ToString() ?? null
+                }
+            };
+
+            return result;
+        }
+
+        public DiscordEmbed BuildEmbed()
+        {
+            Thumbnail thumbnail = embed.thumbnail;
+            Image image = embed.image;
+
+            Author author = embed.author;
+            Footer footer = embed.footer;
+
+            DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+            {
+                Title = embed.title,
+                Description = embed.description,
+                Url = embed.url,
+                Color = new DiscordColor(embed.color),
+                Timestamp = embed.timestamp,
+                ThumbnailUrl = thumbnail?.url ?? null,
+                ImageUrl = image?.url ?? null,
+            };
+
+            if (footer != null)
+            {
+                builder.Footer = new DiscordEmbedBuilder.EmbedFooter()
+                {
+                    IconUrl = footer?.icon_url ?? null,
+                    Text = footer?.text ?? null,
+                };
+            }
+
+            if (author != null)
+            {
+                builder.Author = new DiscordEmbedBuilder.EmbedAuthor()
+                {
+                    IconUrl = author?.icon_url ?? null,
+                    Name = author?.name ?? null,
+                    Url = author?.url ?? null
+                };
+            }
+
+            if (embed.fields != null)
+            {
+                foreach (Field f in embed.fields)
+                    builder.AddField(f.name, f.value, f?.inline ?? false);
+            }
+
+            return builder.Build();
         }
     }
 
