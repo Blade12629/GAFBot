@@ -39,7 +39,6 @@ namespace GAFBot
 
         public static Commands.ICommandHandler CommandHandler { get; internal set; }
         public static Challonge.Api.ChallongeHandler ChallongeHandler { get; internal set; }
-        //public static Gambling.Betting.BettingHandler BettingHandler { get; internal set; }
 
         public static void RequestOsuUserStatus(string user, DiscordMessage message, string originalText)
         {
@@ -294,6 +293,12 @@ namespace GAFBot
                 FileInfo configFile = new FileInfo(Path.Combine(CurrentPath, "Install/config.json"));
                 string json = File.ReadAllText(configFile.FullName);
                 BotConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<BotConfig>(json);
+                
+                config.ChallongeApiKeyEncrypted = EncryptString(config.ChallongeApiKeyEncrypted);
+                config.DiscordClientSecretEncrypted = EncryptString(config.DiscordClientSecretEncrypted);
+                config.OsuApiKeyEncrypted = EncryptString(config.OsuApiKeyEncrypted);
+                config.OsuIrcPasswordEncrypted = EncryptString(config.OsuIrcPasswordEncrypted);
+                config.WebsitePassEncrypted = EncryptString(config.WebsitePassEncrypted);
 
                 using (Database.GAFContext context = new Database.GAFContext())
                 {
@@ -353,9 +358,6 @@ namespace GAFBot
 
 
                 Modules.ModuleHandler.Initialize();
-                
-                //ToDo, remove soon
-                Localization.Init(CurrentPath + @"\locales.cfg");
 
 #if DEBUG
                 Logger.Log("Running on DEBUG mode");

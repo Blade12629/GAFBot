@@ -362,7 +362,36 @@ namespace GAFBot.Osu
 
         public DiscordEmbed CreateStatisticEmbed(AnalyzerResult ar, DiscordColor embedColor)
         {
-            string description = string.Format("{0} {1} {2} ({3}:{4})", Localization.Get("analyzerTeam"), ar.WinningTeam, Localization.Get("analyzerWon"), ar.WinningTeamWins, ar.LosingTeamWins);
+            string analyzerTeam, analyzerWon;
+            string analyzerMatchPlayed;
+            string analyzerMVP, analyzerTeamBlue, analyzerGeneratedPerformanceScore;
+            string analyzerTeamRed;
+            string analyzerHighestScore, analyzerHighestAcc;
+            string analyzerOnMap, analyzerWith, analyzerWithPoints, analyzerAcc;
+            string analyzerFirst, analyzerSecond, analyzerThird;
+            string analyzerAverageAcc;
+            using (Database.GAFContext context = new Database.GAFContext())
+            {
+                analyzerTeam = context.BotLocalization.First(l => l.Code.Equals("analyzerTeam")).String;
+                analyzerWon = context.BotLocalization.First(l => l.Code.Equals("analyzerWon")).String;
+                analyzerMatchPlayed = context.BotLocalization.First(l => l.Code.Equals("analyzerMatchPlayed")).String;
+                analyzerMVP = context.BotLocalization.First(l => l.Code.Equals("analyzerMVP")).String;
+                analyzerTeamBlue = context.BotLocalization.First(l => l.Code.Equals("analyzerTeamBlue")).String;
+                analyzerGeneratedPerformanceScore = context.BotLocalization.First(l => l.Code.Equals("analyzerGeneratedPerformanceScore")).String;
+                analyzerTeamRed = context.BotLocalization.First(l => l.Code.Equals("analyzerTeamRed")).String;
+                analyzerHighestScore = context.BotLocalization.First(l => l.Code.Equals("analyzerHighestScore")).String;
+                analyzerHighestAcc = context.BotLocalization.First(l => l.Code.Equals("analyzerHighestAcc")).String;
+                analyzerOnMap = context.BotLocalization.First(l => l.Code.Equals("analyzerOnMap")).String;
+                analyzerWith = context.BotLocalization.First(l => l.Code.Equals("analyzerWith")).String;
+                analyzerWithPoints = context.BotLocalization.First(l => l.Code.Equals("analyzerWithPoints")).String;
+                analyzerAcc = context.BotLocalization.First(l => l.Code.Equals("analyzerAcc")).String;
+                analyzerFirst = context.BotLocalization.First(l => l.Code.Equals("analyzerFirst")).String;
+                analyzerSecond = context.BotLocalization.First(l => l.Code.Equals("analyzerSecond")).String;
+                analyzerThird = context.BotLocalization.First(l => l.Code.Equals("analyzerThird")).String;
+                analyzerAverageAcc = context.BotLocalization.First(l => l.Code.Equals("analyzerAverageAcc")).String;
+            }
+
+            string description = string.Format("{0} {1} {2} ({3}:{4})", analyzerTeam, ar.WinningTeam, analyzerWon, ar.WinningTeamWins, ar.LosingTeamWins);
 
             DiscordEmbedBuilder discordEmbedBuilder = new DiscordEmbedBuilder()
             {
@@ -370,7 +399,7 @@ namespace GAFBot.Osu
                 Description = description,
                 Footer = new DiscordEmbedBuilder.EmbedFooter()
                 {
-                    Text = $"{Localization.Get("analyzerMatchPlayed")} {ar.TimeStamp}",
+                    Text = $"{analyzerMatchPlayed} {ar.TimeStamp}",
                 },
                 Color = embedColor,
             };
@@ -381,27 +410,27 @@ namespace GAFBot.Osu
             var playerBlue = playersBlue.ElementAt(0).Player;
             var playerRed = playersRed.ElementAt(0).Player;
             //generated performance score = gps
-            discordEmbedBuilder.AddField(Localization.Get("analyzerMVP"), $"{Localization.Get("analyzerTeamBlue")}: {playerBlue.UserName} ({playerBlue.MVPScore} {Localization.Get("analyzerGeneratedPerformanceScore")}){Environment.NewLine}{Localization.Get("analyzerTeamRed")}: {playerRed.UserName} ({playerRed.MVPScore} {Localization.Get("analyzerGeneratedPerformanceScore")})");
+            discordEmbedBuilder.AddField(analyzerMVP, $"{analyzerTeamBlue}: {playerBlue.UserName} ({playerBlue.MVPScore} {analyzerGeneratedPerformanceScore}){Environment.NewLine}{analyzerTeamRed}: {playerRed.UserName} ({playerRed.MVPScore} {analyzerGeneratedPerformanceScore})");
 
-            discordEmbedBuilder.AddField(Localization.Get("analyzerHighestScore"), string.Format("{0} on the map {1} - {2} [{3}] ({4}*) with {5:n0} Points and {6}% Accuracy!",
+            discordEmbedBuilder.AddField(analyzerHighestScore, string.Format("{0} on the map {1} - {2} [{3}] ({4}*) with {5:n0} Points and {6}% Accuracy!",
                 ar.HighestScoreUser.UserName, ar.HighestScoreBeatmap.beatmapset.artist,
                 ar.HighestScoreBeatmap.beatmapset.title, ar.HighestScoreBeatmap.version,
                 ar.HighestScoreBeatmap.difficulty_rating,
                 string.Format("{0:n0}", ar.HighestScoreUser.HighestScore.score),
                 Math.Round(ar.HighestScoreUser.HighestScore.accuracy.Value * 100.0f, 2, MidpointRounding.AwayFromZero)));
 
-            discordEmbedBuilder.AddField(Localization.Get("analyzerHighestAcc"), string.Format("{0} {1} {2} - {3} [{4}] ({5}*) {6} {7:n0} {8} {9}% {10}!",
+            discordEmbedBuilder.AddField(analyzerHighestAcc, string.Format("{0} {1} {2} - {3} [{4}] ({5}*) {6} {7:n0} {8} {9}% {10}!",
                 ar.HighestAccuracyUser.UserName,
-                Localization.Get("analyzerOnMap"),
+                analyzerOnMap,
                 ar.HighestAccuracyBeatmap.beatmapset.artist,
                 ar.HighestAccuracyBeatmap.beatmapset.title,
                 ar.HighestAccuracyBeatmap.version,
                 ar.HighestAccuracyBeatmap.difficulty_rating,
-                Localization.Get("analyzerWith"),
+                analyzerWith,
                 string.Format("{0:n0}", ar.HighestAccuracyScore.score),
-                Localization.Get("analyzerWithPoints"),
+                analyzerWithPoints,
                 Math.Round(ar.HighestAccuracyScore.accuracy.Value * 100.0f, 2, MidpointRounding.AwayFromZero),
-                Localization.Get("analyzerAcc")));
+                analyzerAcc));
 
             for (int i = 1; i < 4; i++)
             {
@@ -417,11 +446,11 @@ namespace GAFBot.Osu
                 switch (place.Place)
                 {
                     case 1:
-                        return (Localization.Get("analyzerFirst"), $"{ place.Player.UserName}: {Localization.Get("analyzerAverageAcc")}: { place.Player.AverageAccuracyRounded}%");
+                        return (analyzerFirst, $"{ place.Player.UserName}: {analyzerAverageAcc}: { place.Player.AverageAccuracyRounded}%");
                     case 2:
-                        return (Localization.Get("analyzerSecond"), $"{ place.Player.UserName}: {Localization.Get("analyzerAverageAcc")}: { place.Player.AverageAccuracyRounded}%");
+                        return (analyzerSecond, $"{ place.Player.UserName}: {analyzerAverageAcc}: { place.Player.AverageAccuracyRounded}%");
                     case 3:
-                        return (Localization.Get("analyzerThird"), $"{place.Player.UserName}: {Localization.Get("analyzerAverageAcc")}: { place.Player.AverageAccuracyRounded}%");
+                        return (analyzerThird, $"{place.Player.UserName}: {analyzerAverageAcc}: { place.Player.AverageAccuracyRounded}%");
                     //Normally unused
                     case 4:
                         return ("Fourth Place", $"{place.Player.UserName}: Average Acc: { place.Player.AverageAccuracyRounded}%");
