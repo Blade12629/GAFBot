@@ -322,32 +322,6 @@ namespace GAFBot.Database
                     .HasColumnName("auto_save_time")
                     .HasColumnType("time");
 
-                entity.Property(e => e.BetChannel)
-                    .HasColumnName("bet_channel")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.ChallongeApiKeyEncrypted)
-                    .IsRequired()
-                    .HasColumnName("challonge_api_key_encrypted")
-                    .HasColumnType("longtext");
-
-                entity.Property(e => e.ChallongeTournamentName)
-                    .IsRequired()
-                    .HasColumnName("challonge_tournament_name")
-                    .HasColumnType("tinytext");
-
-                entity.Property(e => e.CurrentBettingReward)
-                    .HasColumnName("current_betting_reward")
-                    .HasColumnType("smallint(6)");
-
-                entity.Property(e => e.Debug)
-                    .HasColumnName("debug")
-                    .HasColumnType("tinyint(1)");
-
-                entity.Property(e => e.DevChannel)
-                    .HasColumnName("dev_channel")
-                    .HasColumnType("bigint(20)");
-
                 entity.Property(e => e.DiscordClientSecretEncrypted)
                     .IsRequired()
                     .HasColumnName("discord_client_secret_encrypted")
@@ -381,9 +355,9 @@ namespace GAFBot.Database
                     .HasColumnName("osu_irc_user")
                     .HasColumnType("tinytext");
 
-                entity.Property(e => e.PickemChallengeEnabled)
-                    .HasColumnName("pickem_challenge_enabled")
-                    .HasColumnType("tinyint(1)");
+                entity.Property(e => e.CurrentSeason)
+                    .HasColumnName("current_season")
+                    .HasColumnType("text");
 
                 entity.Property(e => e.RefereeRoleId)
                     .HasColumnName("referee_role_id")

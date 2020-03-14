@@ -73,7 +73,7 @@ namespace GAFBot.Commands
                         return;
 
                     var channel = Coding.Methods.GetChannel(e.ChannelID);
-                    var profile = Osu.OsuTourneySession.GetPlayerProfileDB(userid, Program.Config.ChallongeTournamentName);
+                    var profile = Osu.OsuTourneySession.GetPlayerProfileDB(userid, Program.Config.CurrentSeason);
                     channel.SendMessageAsync(embed: Osu.OsuTourneySession.BuildProfile(profile));
                 }
                 else if (cmdSplit[0].Equals("top10", StringComparison.CurrentCultureIgnoreCase))

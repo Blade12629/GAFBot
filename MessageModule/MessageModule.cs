@@ -556,7 +556,7 @@ namespace MessageModule
                     analyzerResult.Bans = bans.ToArray();
 
 
-                    if (sendToApi)
+                    if (sendToApi && Program.HTTPAPI != null)
                     {
                         Task.Run(() =>
                         {
@@ -654,13 +654,13 @@ namespace MessageModule
                         {
                             context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
                             {
-                                ChallongeTournamentName = Program.Config.ChallongeTournamentName,
+                                ChallongeTournamentName = Program.Config.CurrentSeason,
                                 MatchId = highAccScore.Id
                             });
 
                             context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
                             {
-                                ChallongeTournamentName = Program.Config.ChallongeTournamentName,
+                                ChallongeTournamentName = Program.Config.CurrentSeason,
                                 MatchId = highScore.Id
                             });
 

@@ -224,20 +224,13 @@ namespace GAFBot
                 {
                     AnalyzeChannel = 1234567890,
                     AutoSaveTime = TimeSpan.FromMinutes(15),
-                    BetChannel = 1234567890,
-                    ChallongeApiKeyEncrypted = "Api Key",
                     OsuApiKeyEncrypted = "Api Key",
-                    ChallongeTournamentName = "Tournament Name",
-                    CurrentBettingReward = 1,
-                    Debug = false,
-                    DevChannel = 1234567890,
                     DiscordClientSecretEncrypted = "Client Secret",
                     DiscordGuildId = 1234567890,
                     OsuIrcHost = "irc.ppy.sh",
                     OsuIrcPasswordEncrypted = "Irc Password",
                     OsuIrcPort = 6667,
                     OsuIrcUser = "Irc_User",
-                    PickemChallengeEnabled = false,
                     RefereeRoleId = 1234567890,
                     SetVerifiedName = false,
                     SetVerifiedRole = true,
@@ -293,7 +286,6 @@ namespace GAFBot
                 string json = File.ReadAllText(configFile.FullName);
                 BotConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<BotConfig>(json);
                 
-                config.ChallongeApiKeyEncrypted = EncryptString(config.ChallongeApiKeyEncrypted);
                 config.DiscordClientSecretEncrypted = EncryptString(config.DiscordClientSecretEncrypted);
                 config.OsuApiKeyEncrypted = EncryptString(config.OsuApiKeyEncrypted);
                 config.OsuIrcPasswordEncrypted = EncryptString(config.OsuIrcPasswordEncrypted);
@@ -478,6 +470,14 @@ namespace GAFBot
         [AutoInit(2)]
         public static void LoadApi()
         {
+            string host = Config.WebsiteHost;
+
+            if (string.IsNullOrEmpty(host))
+            {
+                Logger.Log("Web API is disabled.", LogLevel.WARNING);
+                return;
+            }
+
             HTTPAPI = new API.HTTP(Config.WebsiteHost);
             bool apiLogin = HTTPAPI.Auth(Config.WebsiteUser, DecryptString(Config.WebsitePassEncrypted)).Result;
 

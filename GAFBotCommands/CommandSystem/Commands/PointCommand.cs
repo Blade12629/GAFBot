@@ -27,12 +27,6 @@ namespace GAFBot.Commands
         {
             try
             {
-                ulong[] channels = new ulong[2]
-                {
-                    (ulong)Program.Config.BetChannel, //#bet_channel
-                    (ulong)Program.Config.DevChannel //#skyfly-room
-                };
-
                 BotUsers user;
 
                 using (Database.GAFContext context = new Database.GAFContext())
@@ -42,17 +36,6 @@ namespace GAFBot.Commands
                 {
                     Coding.Methods.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
                     return;
-                }
-
-                if (!channels.Contains(e.ChannelID))
-                {
-                    if ((AccessLevel)user.AccessLevel != AccessLevel.Admin)
-                    {
-                        Coding.Methods.SendMessage(e.ChannelID, "You can only use this command in #bet_channel!");
-                        return;
-                    }
-                    else
-                        Coding.Methods.SendMessage(e.ChannelID, "Bypassed channel restriction due to admin status");
                 }
 
                 Logger.Log("!points executed", LogLevel.Trace);
