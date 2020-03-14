@@ -38,7 +38,6 @@ namespace GAFBot
         public static string ApiAssemblyName { get { return @"\GAFBotApi.dll"; } }
 
         public static Commands.ICommandHandler CommandHandler { get; internal set; }
-        public static Challonge.Api.ChallongeHandler ChallongeHandler { get; internal set; }
 
         public static void RequestOsuUserStatus(string user, DiscordMessage message, string originalText)
         {
@@ -509,16 +508,6 @@ namespace GAFBot
 
             CommandHandler = Activator.CreateInstance(CommandAssemblyType) as Commands.ICommandHandler;
             CommandHandler.LoadCommands();
-        }
-
-        /// <summary>
-        /// Initializes Challonge
-        /// </summary>
-        [AutoInit(2)]
-        public static void LoadChallonge()
-        {
-            ChallongeHandler = new Challonge.Api.ChallongeHandler();
-            ChallongeHandler.Update();
         }
         
         #endregion
