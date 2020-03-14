@@ -13,12 +13,14 @@ namespace GAFBot.Commands
         public string CMD { get => "embed"; }
         public AccessLevel AccessLevel => AccessLevel.Moderator;
 
-        private static readonly string _info = "Usage:" + Environment.NewLine +
-                                               "```" + Environment.NewLine + 
+        public string Description => "Create, edit or reverse embeds";
+
+        public string DescriptionUsage => "```" + Environment.NewLine +
                                                "!embed create channelId embedCode/-url:www.example.com/raw/text" + Environment.NewLine +
                                                "!embed edit channelId messageId embedCode/-url:www.example.com/raw/text" + Environment.NewLine +
                                                "!embed reverse channelId messageId" + Environment.NewLine +
                                                "```";
+                                               
 
         public static void Init()
         {
@@ -39,7 +41,7 @@ namespace GAFBot.Commands
                 }
                 else if (string.IsNullOrEmpty(e.AfterCMD))
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -62,7 +64,7 @@ namespace GAFBot.Commands
                 int index = @params.IndexOf(' ');
                 if (index <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -81,7 +83,7 @@ namespace GAFBot.Commands
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -98,7 +100,7 @@ namespace GAFBot.Commands
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -138,7 +140,7 @@ namespace GAFBot.Commands
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, _info);
+                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -178,7 +180,7 @@ namespace GAFBot.Commands
                 index = @params.IndexOf(' ');
                 if (index <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -187,7 +189,7 @@ namespace GAFBot.Commands
                 
                 if (@params.Length <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, _info);
+                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 

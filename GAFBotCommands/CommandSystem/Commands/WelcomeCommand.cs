@@ -10,6 +10,10 @@ namespace GAFBot.Commands
         public string CMD { get => "welcome"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
+        public string Description => "Sets the welcome message";
+
+        public string DescriptionUsage => "Usage: !welcome welcome message";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new WelcomeCommand() as ICommand);

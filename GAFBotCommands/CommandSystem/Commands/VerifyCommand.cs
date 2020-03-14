@@ -15,6 +15,10 @@ namespace GAFBot.Commands
 
         public Verification.Osu.IVerificationHandler VerificationHandler { get { return Modules.ModuleHandler.Get("verification") as Verification.Osu.IVerificationHandler; } }
 
+        public string Description => "Starts a verification or verifies a user";
+
+        public string DescriptionUsage => "!verify" + Environment.NewLine + "!verify discordUserId";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new VerifyCommand() as ICommand);

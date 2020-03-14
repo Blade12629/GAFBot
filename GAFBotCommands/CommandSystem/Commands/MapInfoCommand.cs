@@ -12,6 +12,10 @@ namespace GAFBot.Commands
         public string CMD { get => "m"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
+        public string Description => "Gets info about a beatmap";
+
+        public string DescriptionUsage => "!m maplink";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new MapInfoCommand() as ICommand);

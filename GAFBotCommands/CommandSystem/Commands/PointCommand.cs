@@ -13,6 +13,10 @@ namespace GAFBot.Commands
         public string CMD { get => "points"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
+        public string Description => "Points for user info";
+
+        public string DescriptionUsage => "see '!points' for more help" + Environment.NewLine + "!points _set discordUserId Points/MaxValue/MinValue";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new PointCommand() as ICommand);

@@ -13,6 +13,13 @@ namespace GAFBot.Commands
         public string CMD { get => "session"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
+        public string Description => "Gets info about the current tourney session";
+
+        public string DescriptionUsage => "!session p osuUserId" + Environment.NewLine +
+                                          "!session profile osuUserId" + Environment.NewLine +
+                                          "!session top10" + Environment.NewLine +
+                                          "!session top pageX" + Environment.NewLine;
+
         public static void Init()
         {
             Program.CommandHandler.Register(new SessionCommand() as ICommand);

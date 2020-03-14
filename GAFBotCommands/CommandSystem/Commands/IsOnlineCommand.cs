@@ -12,6 +12,10 @@ namespace GAFBot.Commands
         public string CMD { get => "isonline"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
+        public string Description => "Checks if a user is online ingame";
+
+        public string DescriptionUsage => "!isonline Osu_User_Name";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new IsOnlineCommand() as ICommand);

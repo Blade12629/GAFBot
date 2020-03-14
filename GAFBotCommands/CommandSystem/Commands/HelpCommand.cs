@@ -17,6 +17,10 @@ namespace GAFBot.Commands
 
         public AccessLevel AccessLevel => AccessLevel.User;
 
+        public string Description => "Displays a list of available commands";
+
+        public string DescriptionUsage => "Usage: !help";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new HelpCommand());
@@ -37,7 +41,7 @@ namespace GAFBot.Commands
 
             foreach (ICommand cmd in commands)
                 if (cmd.AccessLevel <= access)
-                    response += Environment.NewLine + $"{cmd.Activator}{cmd.CMD}";
+                    response += Environment.NewLine + $"{cmd.Activator}{cmd.CMD}: {cmd.Description}";
 
             Coding.Methods.SendMessage(e.ChannelID, $"```{Environment.NewLine}{response}{Environment.NewLine}```");
         }

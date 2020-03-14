@@ -10,6 +10,10 @@ namespace GAFBot.Commands
         public string CMD { get => "cs"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
+        public string Description => "Reloads commands";
+
+        public string DescriptionUsage => "!cs r";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new CSCommand() as ICommand);

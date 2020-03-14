@@ -17,7 +17,9 @@ namespace GAFBotCommands.CommandSystem.Commands
         public string CMD { get => "birthday"; }
         public AccessLevel AccessLevel => AccessLevel.User;
 
-        private readonly string _invalidDateFormatMessage = "Please use a valid date format: " + Environment.NewLine + "```" + Environment.NewLine +
+        public string Description => "Sets your current birthday";
+
+        public string DescriptionUsage => "Please use a valid date format: " + Environment.NewLine + "```" + Environment.NewLine +
                                                             "DD/MM[/YYYY]" + Environment.NewLine +
                                                            @"DD\MM[\YYYY]" + Environment.NewLine +
                                                             "DD.MM[.YYYY]" + Environment.NewLine + "```" + Environment.NewLine +
@@ -73,7 +75,7 @@ namespace GAFBotCommands.CommandSystem.Commands
                 split = e.AfterCMD.Split('/');
             else
             {
-                Coding.Methods.SendMessage(e.ChannelID, _invalidDateFormatMessage);
+                Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                 return;
             }
 

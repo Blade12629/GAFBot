@@ -14,13 +14,11 @@ namespace GAFBot.Commands
         public virtual string CMD { get; set; }
         public virtual AccessLevel AccessLevel { get; set; }
         public int UseCount { get; private set; }
+        public string Description { get; private set; }
+        public string DescriptionUsage { get; private set; }
 
         public virtual void Activate(CommandEventArg e)
         {
-            /*
-             * ToDo: build area for logging
-             */
-
             UseCount++;
         }
     }

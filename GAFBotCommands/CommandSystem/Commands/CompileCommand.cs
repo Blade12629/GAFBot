@@ -10,6 +10,10 @@ namespace GAFBot.Commands
         public string CMD { get => "compile"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
+        public string Description => "Compiles and runs c# code at runtime";
+
+        public string DescriptionUsage => "!compile c# code";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new CompileCommand() as ICommand);

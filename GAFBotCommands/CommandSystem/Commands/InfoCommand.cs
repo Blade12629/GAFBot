@@ -13,6 +13,10 @@ namespace GAFBot.Commands
         public string CMD { get => "infou"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
+        public string Description => "Displays info about an discord user";
+
+        public string DescriptionUsage => "Usage: !infou discordUserId";
+
         public static void Init()
         {
             Program.CommandHandler.Register(new InfoCommand() as ICommand);
@@ -24,7 +28,7 @@ namespace GAFBot.Commands
             ulong userid = 0;
             if (string.IsNullOrEmpty(e.AfterCMD))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Usage: !infou discordUserId");
+                Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
                 return;
             }
             else if (e.AfterCMD.StartsWith("verifications"))
