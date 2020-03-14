@@ -50,8 +50,8 @@ namespace GAFBot.Database
                     .HasColumnName("id")
                     .HasColumnType("int(11)");
 
-                entity.Property(e => e.ChallongeTournamentName)
-                    .HasColumnName("challonge_tournament_name")
+                entity.Property(e => e.Season)
+                    .HasColumnName("season")
                     .HasColumnType("text");
 
                 entity.Property(e => e.MatchId)

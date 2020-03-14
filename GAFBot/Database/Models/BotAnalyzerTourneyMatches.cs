@@ -7,7 +7,7 @@ namespace GAFBot.Database.Models
     public class BotAnalyzerTourneyMatches
     {
         public int Id { get; set; }
-        public string ChallongeTournamentName { get; set; }
+        public string Season { get; set; }
         public long MatchId { get; set; }
     }
 }

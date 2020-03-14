@@ -654,13 +654,13 @@ namespace MessageModule
                         {
                             context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
                             {
-                                ChallongeTournamentName = Program.Config.CurrentSeason,
+                                Season = Program.Config.CurrentSeason,
                                 MatchId = highAccScore.Id
                             });
 
                             context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
                             {
-                                ChallongeTournamentName = Program.Config.CurrentSeason,
+                                Season = Program.Config.CurrentSeason,
                                 MatchId = highScore.Id
                             });
 

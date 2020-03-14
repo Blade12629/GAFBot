@@ -20,7 +20,7 @@ namespace GAFBot.Osu
 
                 using (Database.GAFContext context = new Database.GAFContext())
                 {
-                    matches = context.BotAnalyzerTourneyMatch.Where(m => m.ChallongeTournamentName.Equals(sessionName, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                    matches = context.BotAnalyzerTourneyMatch.Where(m => m.Season.Equals(sessionName, StringComparison.CurrentCultureIgnoreCase)).ToList();
 
                     foreach (var match in matches)
                     {

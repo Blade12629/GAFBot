@@ -240,7 +240,8 @@ namespace GAFBot
                     WebsitePassEncrypted = "Password",
                     WebsiteUser = "User",
                     WelcomeChannel = 1234567890,
-                    WelcomeMessage = "Welcome to our discord!"
+                    WelcomeMessage = "Welcome to our discord!",
+                    CurrentSeason = "Season 1"
                 };
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented);
                 string file = Path.Combine(CurrentPath, "Install/config.json");
