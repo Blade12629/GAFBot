@@ -24,7 +24,20 @@ namespace MessageModule
             DiscordColor.Magenta
         };
 
-        public bool Enabled { get; set; }
+        /// <summary>
+        /// Always enabled
+        /// </summary>
+        public bool Enabled
+        {
+            get
+            {
+                return true;
+            }
+            set
+            {
+
+            }
+        }
 
         public string ModuleName => "message";
 
