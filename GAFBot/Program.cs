@@ -69,10 +69,7 @@ namespace GAFBot
             {
                 BotConfig config;
                 using (Database.GAFContext context = new Database.GAFContext())
-                {
-                    int highest = context.BotConfig.Max(c => c.Id);
-                    config = context.BotConfig.First(c => c.Id == highest);
-                }
+                    config = context.BotConfig.First(c => c.Id == 1);
 
                 return config;
             }
@@ -521,7 +518,7 @@ namespace GAFBot
         {
             if (_saveTimer != null)
                 return;
-
+            
             _saveTimer = new System.Timers.Timer()
             {
                 AutoReset = true,

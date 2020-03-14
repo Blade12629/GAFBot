@@ -35,7 +35,12 @@ namespace GAFBot.Database
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseMySql(Environment.GetEnvironmentVariable("DBConnectionString", EnvironmentVariableTarget.Process));
+                optionsBuilder.UseMySql(Environment.GetEnvironmentVariable("DBConnectionString", EnvironmentVariableTarget.Process), builder =>
+                {
+                    builder.EnableRetryOnFailure(10, TimeSpan.FromSeconds(2), null);
+                });
+
+                base.OnConfiguring(optionsBuilder);
                 //optionsBuilder.UseMySql(Program.DBConnectionString);
             }
         }
@@ -313,6 +318,10 @@ namespace GAFBot.Database
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .HasColumnType("int(11)");
+                
+                entity.Property(e => e.CurrentSeason)
+                    .HasColumnName("current_season")
+                    .HasColumnType("text");
 
                 entity.Property(e => e.AnalyzeChannel)
                     .HasColumnName("analyze_channel")
@@ -354,10 +363,6 @@ namespace GAFBot.Database
                     .IsRequired()
                     .HasColumnName("osu_irc_user")
                     .HasColumnType("tinytext");
-
-                entity.Property(e => e.CurrentSeason)
-                    .HasColumnName("current_season")
-                    .HasColumnType("text");
 
                 entity.Property(e => e.RefereeRoleId)
                     .HasColumnName("referee_role_id")
