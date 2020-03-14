@@ -18,10 +18,8 @@ namespace GAFBot.Database
         
         public virtual DbSet<BotBets> BotBets { get; set; }
         public virtual DbSet<BotConfig> BotConfig { get; set; }
-        public virtual DbSet<BotImages> BotImages { get; set; }
         public virtual DbSet<BotLog> BotLog { get; set; }
         public virtual DbSet<BotMaintenance> BotMaintenance { get; set; }
-        public virtual DbSet<BotPatterns> BotPatterns { get; set; }
         public virtual DbSet<BotUsers> BotUsers { get; set; }
         public virtual DbSet<BotVerifications> BotVerifications { get; set; }
         public virtual DbSet<BotAnalyzerResult> BotAnalyzerResult { get; set; }
@@ -431,26 +429,7 @@ namespace GAFBot.Database
                     .HasColumnName("welcome_message")
                     .HasColumnType("longtext");
             });
-
-            modelBuilder.Entity<BotImages>(entity =>
-            {
-                entity.ToTable("bot_images");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Category)
-                    .IsRequired()
-                    .HasColumnName("category")
-                    .HasColumnType("tinytext");
-
-                entity.Property(e => e.Url)
-                    .IsRequired()
-                    .HasColumnName("url")
-                    .HasColumnType("longtext");
-            });
-
+            
             modelBuilder.Entity<BotLog>(entity =>
             {
                 entity.ToTable("bot_log");
@@ -491,25 +470,7 @@ namespace GAFBot.Database
                     .HasColumnName("notification")
                     .HasColumnType("longtext");
             });
-
-            modelBuilder.Entity<BotPatterns>(entity =>
-            {
-                entity.ToTable("bot_patterns");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Category)
-                    .IsRequired()
-                    .HasColumnName("category")
-                    .HasColumnType("tinytext");
-
-                entity.Property(e => e.Text)
-                    .HasColumnName("text")
-                    .HasColumnType("longtext");
-            });
-
+            
             modelBuilder.Entity<BotUsers>(entity =>
             {
                 entity.ToTable("bot_users");

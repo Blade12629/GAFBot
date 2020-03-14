@@ -17,6 +17,7 @@ using DSharpPlus.Exceptions;
 using GAFBot.Database.Models;
 using GAFBot.MessageSystem;
 using GAFBot.Verification.Osu;
+using Microsoft.EntityFrameworkCore;
 
 namespace GAFBot
 {
@@ -140,43 +141,217 @@ namespace GAFBot
             }
         }
 
+        private static void ProcessConsoleArg(string arg)
+        {
+            switch(arg.ToLower())
+            {
+                //Creates empty config json in (Install/config.json)
+                case "-createconfig":
+                    CreateConfig();
+                    return;
+
+                //Creates installation sql's to execute against db (Install/)
+                case "-createsql":
+                    CreateSQL();
+                    return;
+
+                //Executes all sql's against the db (Install/)
+                case "-installsql":
+                    InstallSQL();
+                    return;
+
+                case "-installcfg":
+                case "-installconfig":
+                    InstallConfig();
+                    return;
+
+                case "-finished":
+                case "-exit":
+                case "-abort":
+                    Exit();
+                    return;
+
+                case "-waitforkey":
+                    Console.WriteLine("(Press any key to continue)");
+                    Console.ReadKey();
+                    return;
+                case "-waitforline":
+                    Console.WriteLine("(Press 'Enter' to continue)");
+                    Console.ReadLine();
+                    return;
+                case "-emptyLine":
+                case "-writeLine":
+                    Console.WriteLine();
+                    return;
+                case "-cls":
+                case "-clear":
+                    Console.Clear();
+                    return;
+            }
+
+            if (arg.ToLower().StartsWith("-print:"))
+            {
+                string toPrint = arg.Remove(0, 7).Replace('_', ' ');
+                Console.WriteLine(toPrint);
+                return;
+            }
+            else if (arg.ToLower().StartsWith("-colorfore:"))
+            {
+                string color = arg.Remove(0, 11);
+
+                if (!Enum.TryParse(color, out ConsoleColor result))
+                {
+                    Console.WriteLine("Could not find color: " + color);
+                    return;
+                }
+
+                Console.ForegroundColor = result;
+            }
+            else if (arg.ToLower().StartsWith("-colorback:"))
+            {
+                string color = arg.Remove(0, 11);
+
+                if (!Enum.TryParse(color, out ConsoleColor result))
+                {
+                    Console.WriteLine("Could not find color: " + color);
+                    return;
+                }
+
+                Console.BackgroundColor = result;
+            }
+
+            void CreateConfig()
+            {
+                BotConfig config = new BotConfig()
+                {
+                    AnalyzeChannel = 1234567890,
+                    AutoSaveTime = TimeSpan.FromMinutes(15),
+                    BetChannel = 1234567890,
+                    ChallongeApiKeyEncrypted = "Api Key",
+                    OsuApiKeyEncrypted = "Api Key",
+                    ChallongeTournamentName = "Tournament Name",
+                    CurrentBettingReward = 1,
+                    Debug = false,
+                    DevChannel = 1234567890,
+                    DiscordClientSecretEncrypted = "Client Secret",
+                    DiscordGuildId = 1234567890,
+                    OsuIrcHost = "irc.ppy.sh",
+                    OsuIrcPasswordEncrypted = "Irc Password",
+                    OsuIrcPort = 6667,
+                    OsuIrcUser = "Irc_User",
+                    PickemChallengeEnabled = false,
+                    RefereeRoleId = 1234567890,
+                    SetVerifiedName = false,
+                    SetVerifiedRole = true,
+                    VerifiedRoleId = 1234567890,
+                    WarmupMatchCount = 2,
+                    WebsiteHost = "Address",
+                    WebsitePassEncrypted = "Password",
+                    WebsiteUser = "User",
+                    WelcomeChannel = 1234567890,
+                    WelcomeMessage = "Welcome to our discord!"
+                };
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented);
+                string file = Path.Combine(CurrentPath, "Install/config.json");
+
+                FileInfo fi = new FileInfo(file);
+
+                if (!fi.Directory.Exists)
+                    fi.Directory.Create();
+                else if (fi.Exists)
+                    fi.Delete();
+
+                File.WriteAllText(fi.FullName, json);
+            }
+
+            void CreateSQL()
+            {
+                FileInfo sqlFile = new FileInfo(Path.Combine(CurrentPath, "Install/db.sql"));
+
+                if (!sqlFile.Directory.Exists)
+                    sqlFile.Directory.Create();
+                else if (sqlFile.Exists)
+                    sqlFile.Delete();
+
+                File.WriteAllText(sqlFile.FullName, Resources.db);
+            }
+
+            void InstallSQL()
+            {
+                FileInfo sqlFile = new FileInfo(Path.Combine(CurrentPath, "Install/db.sql"));
+
+                string sql = File.ReadAllText(sqlFile.FullName);
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    context.Database.ExecuteSqlRaw(sql);
+                    context.SaveChanges();
+                }
+            }
+
+            void InstallConfig()
+            {
+                FileInfo configFile = new FileInfo(Path.Combine(CurrentPath, "Install/config.json"));
+                string json = File.ReadAllText(configFile.FullName);
+                BotConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<BotConfig>(json);
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    context.BotConfig.Add(config);
+                    context.SaveChanges();
+                }
+            }
+
+            void Exit()
+            {
+                Environment.Exit(0);
+            }
+        }
+
         private static async Task MainTask(string[] args)
         {
             Rnd = new Random();
             _checkForMaintenance = true;
             _maintenanceTask = new Task(CheckForMaintenance);
 
-            SaveEvent += () => Logger.Log("Starting Save process");
-            ExitEvent += () =>
-            {
-                _checkForMaintenance = false;
-
-                while (_maintenanceTask.Status == TaskStatus.Running)
-                    Task.Delay(5).Wait();
-
-                Logger.Log("Exit Event: Invoking Save Event");
-                SaveEvent?.Invoke();
-
-                if (Client != null)
-                {
-                    Logger.Log("Exit Event: Closing Discord connections");
-                    IReadOnlyList<DiscordConnection> connections = Client.GetConnectionsAsync().Result;
-                    if (connections.Count > 0)
-                    {
-                        Client.DisconnectAsync().Wait();
-                        Client.Dispose();
-                    }
-                }
-            };
-
-            _handler += new EventHandler(Handler);
-            SetConsoleCtrlHandler(_handler, true);
-
             try
             {
+                if (args != null && args.Length > 0)
+                {
+                    foreach (string arg in args)
+                        ProcessConsoleArg(arg);
+                }
+
                 LoadEnviromentVariables();
                 Logger.Initialize();
                 
+                SaveEvent += () => Logger.Log("Starting Save process");
+                ExitEvent += () =>
+                {
+                    _checkForMaintenance = false;
+
+                    while (_maintenanceTask.Status == TaskStatus.Running)
+                        Task.Delay(5).Wait();
+
+                    Logger.Log("Exit Event: Invoking Save Event");
+                    SaveEvent?.Invoke();
+
+                    if (Client != null)
+                    {
+                        Logger.Log("Exit Event: Closing Discord connections");
+                        IReadOnlyList<DiscordConnection> connections = Client.GetConnectionsAsync().Result;
+                        if (connections.Count > 0)
+                        {
+                            Client.DisconnectAsync().Wait();
+                            Client.Dispose();
+                        }
+                    }
+                };
+
+                _handler += new EventHandler(Handler);
+                SetConsoleCtrlHandler(_handler, true);
+
+
                 Modules.ModuleHandler.Initialize();
                 
                 //ToDo, remove soon
@@ -378,7 +553,15 @@ namespace GAFBot
                 Environment.SetEnvironmentVariable("GAF", "false", EnvironmentVariableTarget.Process);
 
             string dbFile = Path.Combine(CurrentPath, "dbconnection.string");
-            Environment.SetEnvironmentVariable("DBConnectionString", File.ReadAllText(dbFile), EnvironmentVariableTarget.Process);
+
+            if (File.Exists(dbFile))
+                Environment.SetEnvironmentVariable("DBConnectionString", File.ReadAllText(dbFile), EnvironmentVariableTarget.Process);
+            else
+            {
+                Logger.Log("Could not find db connection string " + dbFile);
+                Environment.SetEnvironmentVariable("DBConnectionString", "null", EnvironmentVariableTarget.Process);
+                return;
+            }
         }
 
         private static bool _lastStateMaint;

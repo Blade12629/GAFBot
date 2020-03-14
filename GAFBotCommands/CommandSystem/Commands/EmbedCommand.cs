@@ -46,7 +46,7 @@ namespace GAFBot.Commands
                 string download = null;
 
                 int urlStart = e.AfterCMD.IndexOf("-url:");
-                string urlString = e.AfterCMD.Remove(0, urlStart + 4);
+                string urlString = e.AfterCMD.Remove(0, urlStart + 5);
 
                 if (!string.IsNullOrEmpty(urlString))
                 {
