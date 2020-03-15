@@ -66,7 +66,7 @@ namespace GAFBot.Commands
 
                     if (maint.Enabled && access < AccessLevel.Admin)
                     {
-                        Coding.Methods.ChannelMessage(chid, "Bot is currently in maintenance, please try again later" + Environment.NewLine +
+                        Coding.Discord.SendMessage(chid, "Bot is currently in maintenance, please try again later" + Environment.NewLine +
                                                             "Info: " + maint.Notification ?? "no information");
 
                         return false;

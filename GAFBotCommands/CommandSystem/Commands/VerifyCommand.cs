@@ -22,7 +22,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new VerifyCommand() as ICommand);
-            Coding.Methods.Log(typeof(VerifyCommand).Name + " Registered");
+            Logger.Log(nameof(VerifyCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -33,19 +33,18 @@ namespace GAFBot.Commands
 
                 if (verifyHandler == null)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "Disabled");
+                    Coding.Discord.SendMessage(e.ChannelID, "Disabled");
                     return;
                 }
 
-                var dclient = Coding.Methods.GetClient();
-                var privChannel = Coding.Methods.GetPrivChannel(e.DUserID);
-                var dchannel = Coding.Methods.GetChannel(e.ChannelID);
+                var dclient = Coding.Discord.GetClient();
+                var dchannel = Coding.Discord.GetChannel(e.ChannelID);
 
                 if (e.AfterCMD.StartsWith("user", StringComparison.CurrentCultureIgnoreCase))
                 {
                     if (!e.GuildID.HasValue)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "You can only use this in a guild chat!");
+                        Coding.Discord.SendMessage(e.ChannelID, "You can only use this in a guild chat!");
                         return;
                     }
 
@@ -53,18 +52,18 @@ namespace GAFBot.Commands
 
                     if (!ulong.TryParse(ulongStr, out ulong duserId))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, $"Could not parse {duserId} to ulong");
+                        Coding.Discord.SendMessage(e.ChannelID, $"Could not parse {duserId} to ulong");
                         return;
                     }
 
-                    var dmember = Coding.Methods.GetMember(duserId, e.GuildID.Value);
+                    var dmember = Coding.Discord.GetMember(duserId, e.GuildID.Value);
 
                     using (Database.GAFContext context = new Database.GAFContext())
                     {
                         BotUsers buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
 
                         if (buser == null)
-                            (Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Methods.GetUser(duserId), (ulong)e.GuildID);
+                            (Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Discord.GetUser(duserId), (ulong)e.GuildID);
                         
                         buser = context.BotUsers.FirstOrDefault(bu => (ulong)bu.DiscordId == dmember.Id);
 
@@ -80,10 +79,10 @@ namespace GAFBot.Commands
                     }
 
                     if (Program.Config.SetVerifiedRole)
-                        Coding.Methods.AssignRole(duserId, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId, "Verified, bypass");
+                        Coding.Discord.AssignRole(duserId, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId, "Verified, bypass");
 
 
-                    Coding.Methods.SendMessage(e.ChannelID, "Verified " + duserId);
+                    Coding.Discord.SendMessage(e.ChannelID, "Verified " + duserId);
                     return;
                 }
 
@@ -94,7 +93,7 @@ namespace GAFBot.Commands
 
                 if (user != null && user.IsVerified)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, $"You already have been Verified (osu: {user.OsuUsername})");
+                    Coding.Discord.SendMessage(e.ChannelID, $"You already have been Verified (osu: {user.OsuUsername})");
                     return;
                 }
                 
@@ -111,7 +110,7 @@ namespace GAFBot.Commands
                     return;
                 }
                 
-                privChannel.SendMessageAsync($"Please login to osu! and contact Skyfly (in osu!) with the following: !verify {result}").Wait();
+                Coding.Discord.SendPrivateMessage(e.DUserID, $"Please login to osu! and contact Skyfly (in osu!) with the following: !verify {result}");
             }
             catch (Exception ex)
             {

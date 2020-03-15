@@ -29,8 +29,6 @@ namespace GAFBotCommands.CommandSystem.Commands
 
         public static void Init()
         {
-            Program.CommandHandler.Register(new BirthdayCommand());
-            Coding.Methods.Log(typeof(BirthdayCommand).Name + " Registered");
 
             _refreshTimer = new Timer()
             {
@@ -40,6 +38,9 @@ namespace GAFBotCommands.CommandSystem.Commands
 
             _refreshTimer.Elapsed += RefreshTimerElapsed;
             _refreshTimer.Start();
+
+            Program.CommandHandler.Register(new BirthdayCommand());
+            Logger.Log(nameof(BirthdayCommand) + " Registered");
         }
 
         private static void RefreshTimerElapsed(object sender, ElapsedEventArgs e)
@@ -59,7 +60,7 @@ namespace GAFBotCommands.CommandSystem.Commands
             foreach (BotBirthday bday in birthdays)
             {
                 string toSend = $"Happy{(bday.Year == 0 ? "" : $" {DateTime.UtcNow.Year - bday.Year}.")} birthday <@!{(ulong)bday.DiscordId}>";
-                Coding.Methods.SendMessage(239677046274392066, toSend);
+                Coding.Discord.SendMessage(239677046274392066, toSend);
             }
         }
 
@@ -75,13 +76,13 @@ namespace GAFBotCommands.CommandSystem.Commands
                 split = e.AfterCMD.Split('/');
             else
             {
-                Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                 return;
             }
 
             if (!int.TryParse(split[0], out int day))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Could not parse: " + split[0]);
+                Coding.Discord.SendMessage(e.ChannelID, "Could not parse: " + split[0]);
                 return;
             }
             
@@ -89,7 +90,7 @@ namespace GAFBotCommands.CommandSystem.Commands
 
             if (!int.TryParse(split[1], out int month))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Could not parse: " + split[1]);
+                Coding.Discord.SendMessage(e.ChannelID, "Could not parse: " + split[1]);
                 return;
             }
 
@@ -98,7 +99,7 @@ namespace GAFBotCommands.CommandSystem.Commands
             int year = 0;
             if (split.Length == 3 && !int.TryParse(split[2], out year))
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Could not parse: " + split[2]);
+                Coding.Discord.SendMessage(e.ChannelID, "Could not parse: " + split[2]);
                 return;
             }
 
@@ -121,7 +122,7 @@ namespace GAFBotCommands.CommandSystem.Commands
                     context.BotBirthday.Add(bbday);
                     context.SaveChanges();
 
-                    Coding.Methods.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
+                    Coding.Discord.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
                     Logger.Log($"Set birthday of {e.DUserID} to {bbday.Day}/{bbday.Month}/{bbday.Year}");
                     return;
                 }
@@ -133,7 +134,7 @@ namespace GAFBotCommands.CommandSystem.Commands
                 context.BotBirthday.Update(bbday);
                 context.SaveChanges();
 
-                Coding.Methods.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
+                Coding.Discord.SendMessage(e.ChannelID, $"Set your birthday to {bbday.Day}/{bbday.Month}/{bbday.Year}");
                 Logger.Log($"Set birthday of {e.DUserID} to {bbday.Day}/{bbday.Month}/{bbday.Year}");
             }
         }

@@ -23,75 +23,67 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new SessionCommand() as ICommand);
-            Coding.Methods.Log(typeof(SessionCommand).Name + " Registered");
+            Logger.Log(nameof(SessionCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
         {
-            Coding.Methods.ChannelMessage(e.ChannelID, "Disabled for now");
+            Coding.Discord.SendMessage(e.ChannelID, "Disabled for now");
 
             return;
+            
+            if (string.IsNullOrEmpty(e.AfterCMD))
+                return;
 
-            try
+            string[] cmdSplit = e.AfterCMD.Split(' ');
+
+
+            AccessLevel access;
+
+            using (Database.GAFContext context = new Database.GAFContext())
             {
-                if (string.IsNullOrEmpty(e.AfterCMD))
+                BotUsers user = context.BotUsers.First(u => (ulong)u.DiscordId == e.DUserID);
+                access = (AccessLevel)user.AccessLevel;
+            }
+
+            if (cmdSplit[0].Equals("profile") || cmdSplit[0].Equals("p"))
+            {
+                #region withSession
+                /*if (cmdSplit[1].StartsWith('"'))
+                //{
+                //    string sessionName = cmdSplit[1].TrimStart('"');
+                //    for (int i = 2; i < cmdSplit.Length; i++)
+                //    {
+                //        if (cmdSplit[i].EndsWith('"'))
+                //        {
+                //            sessionName += " " + cmdSplit[i].TrimEnd('"');
+                //            break;
+                //        }
+
+                //        sessionName += " " + cmdSplit[i];
+                //    }
+                }*/
+                #endregion
+
+                int userid = -1;
+
+                if (!int.TryParse(cmdSplit[1], out userid))
                     return;
 
-                string[] cmdSplit = e.AfterCMD.Split(' ');
-
-
-                AccessLevel access;
-
-                using (Database.GAFContext context = new Database.GAFContext())
-                {
-                    BotUsers user = context.BotUsers.First(u => (ulong)u.DiscordId == e.DUserID);
-                    access = (AccessLevel)user.AccessLevel;
-                }
-
-                if (cmdSplit[0].Equals("profile") || cmdSplit[0].Equals("p"))
-                {
-                    #region withSession
-                    /*if (cmdSplit[1].StartsWith('"'))
-                    //{
-                    //    string sessionName = cmdSplit[1].TrimStart('"');
-                    //    for (int i = 2; i < cmdSplit.Length; i++)
-                    //    {
-                    //        if (cmdSplit[i].EndsWith('"'))
-                    //        {
-                    //            sessionName += " " + cmdSplit[i].TrimEnd('"');
-                    //            break;
-                    //        }
-
-                    //        sessionName += " " + cmdSplit[i];
-                    //    }
-                    }*/
-                    #endregion
-
-                    int userid = -1;
-
-                    if (!int.TryParse(cmdSplit[1], out userid))
-                        return;
-
-                    var channel = Coding.Methods.GetChannel(e.ChannelID);
-                    var profile = Osu.OsuTourneySession.GetPlayerProfileDB(userid, Program.Config.CurrentSeason);
-                    channel.SendMessageAsync(embed: Osu.OsuTourneySession.BuildProfile(profile));
-                }
-                else if (cmdSplit[0].Equals("top10", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    GetAndSendTopList(e.ChannelID, 0);
-                }
-                else if (cmdSplit[0].Equals("top", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    if (!int.TryParse(cmdSplit[1], out int offset))
-                        return;
-
-                    GetAndSendTopList(e.ChannelID, offset);
-                }
+                var channel = Coding.Discord.GetChannel(e.ChannelID);
+                var profile = Osu.OsuTourneySession.GetPlayerProfileDB(userid, Program.Config.CurrentSeason);
+                channel.SendMessageAsync(embed: Osu.OsuTourneySession.BuildProfile(profile));
             }
-            catch (Exception ex)
+            else if (cmdSplit[0].Equals("top10", StringComparison.CurrentCultureIgnoreCase))
             {
-                Coding.Methods.SendMessage(e.ChannelID, ex.ToString());
-                Console.WriteLine(ex);
+                GetAndSendTopList(e.ChannelID, 0);
+            }
+            else if (cmdSplit[0].Equals("top", StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (!int.TryParse(cmdSplit[1], out int offset))
+                    return;
+
+                GetAndSendTopList(e.ChannelID, offset);
             }
         }
 

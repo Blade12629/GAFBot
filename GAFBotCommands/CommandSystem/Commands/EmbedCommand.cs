@@ -25,7 +25,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new EmbedCommand() as ICommand);
-            Coding.Methods.Log(typeof(EmbedCommand).Name + " Registered");
+            Logger.Log(nameof(EmbedCommand) + " Registered");
         }
         
 
@@ -36,12 +36,12 @@ namespace GAFBot.Commands
             {
                 if (!e.GuildID.HasValue)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "This command is only usable in a discord channel");
+                    Coding.Discord.SendMessage(e.ChannelID, "This command is only usable in a discord channel");
                     return;
                 }
                 else if (string.IsNullOrEmpty(e.AfterCMD))
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                    Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -64,7 +64,7 @@ namespace GAFBot.Commands
                 int index = @params.IndexOf(' ');
                 if (index <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                    Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -83,7 +83,7 @@ namespace GAFBot.Commands
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                        Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -93,14 +93,14 @@ namespace GAFBot.Commands
 
                     if (!ulong.TryParse(channelIdStr, out channelId))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
                         return;
                     }
 
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                        Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -109,16 +109,16 @@ namespace GAFBot.Commands
                     
                     if (!ulong.TryParse(messageIdStr, out messageId))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
                         return;
                     }
 
-                    dchannel = Coding.Methods.GetChannel(channelId);
+                    dchannel = Coding.Discord.GetChannel(channelId);
                     dmessage = dchannel.GetMessageAsync(messageId).Result;
 
                     if (dmessage == null)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not find message " + messageId);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not find message " + messageId);
                         return;
                     }
 
@@ -126,7 +126,7 @@ namespace GAFBot.Commands
 
                     if (embedJson == null)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Failed to parse your embed json");
+                        Coding.Discord.SendMessage(e.ChannelID, "Failed to parse your embed json");
                         return;
                     }
 
@@ -140,7 +140,7 @@ namespace GAFBot.Commands
                     index = @params.IndexOf(' ');
                     if (index <= 1)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                        Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                         return;
                     }
 
@@ -149,7 +149,7 @@ namespace GAFBot.Commands
 
                     if (!ulong.TryParse(channelIdStr, out channelId))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
                         return;
                     }
                     
@@ -157,30 +157,30 @@ namespace GAFBot.Commands
 
                     if (!ulong.TryParse(messageIdStr, out messageId))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not parse message id: " + messageIdStr);
                         return;
                     }
 
-                    dchannel = Coding.Methods.GetChannel(channelId);
+                    dchannel = Coding.Discord.GetChannel(channelId);
                     dmessage = dchannel.GetMessageAsync(messageId).Result;
 
                     if (dmessage == null)
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not find message " + messageId);
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not find message " + messageId);
                         return;
                     }
 
                     var reversed = Json.EmbedJson.ReverseEmbed(dmessage);
                     string json = Newtonsoft.Json.JsonConvert.SerializeObject(reversed, Newtonsoft.Json.Formatting.Indented);
 
-                    Coding.Methods.SendMessage(e.ChannelID, "```js" + Environment.NewLine + json + Environment.NewLine + "```");
+                    Coding.Discord.SendMessage(e.ChannelID, "```js" + Environment.NewLine + json + Environment.NewLine + "```");
                     return;
                 }
 
                 index = @params.IndexOf(' ');
                 if (index <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                    Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
@@ -189,24 +189,24 @@ namespace GAFBot.Commands
                 
                 if (@params.Length <= 1)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                    Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                     return;
                 }
 
                 if (!ulong.TryParse(channelIdStr, out channelId))
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
+                    Coding.Discord.SendMessage(e.ChannelID, "Could not parse channel id: " + channelIdStr);
                     return;
                 }
 
                 Logger.Log(channelIdStr + " : " + channelId);
 
-                dchannel = Coding.Methods.GetChannel(channelId);
+                dchannel = Coding.Discord.GetChannel(channelId);
                 embedJson = Newtonsoft.Json.JsonConvert.DeserializeObject<Json.EmbedJson>(@params);
 
                 if (embedJson == null)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "Failed to parse your embed json");
+                    Coding.Discord.SendMessage(e.ChannelID, "Failed to parse your embed json");
                     return;
                 }
 

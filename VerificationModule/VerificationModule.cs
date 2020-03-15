@@ -354,7 +354,7 @@ namespace VerificationModule
 
                 if (bver != null)
                 {
-                    Coding.Methods.GetPrivChannel(duserid).SendMessageAsync("Your verification is already active, code: " + bver.Code);
+                    Coding.Discord.SendPrivateMessage(duserid, "Your verification is already active, code: " + bver.Code);
                     return "active";
                 }
 
@@ -397,15 +397,13 @@ namespace VerificationModule
 
             if (buser == null)
             {
-                (GAFBot.Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Methods.GetUser(duserid), (ulong)Program.Config.DiscordGuildId);
+                (GAFBot.Modules.ModuleHandler.Get("message") as IMessageHandler)?.Register(Coding.Discord.GetUser(duserid), (ulong)Program.Config.DiscordGuildId);
 
                 using (GAFContext context = new GAFContext())
                     buser = context.BotUsers.First(bu => (ulong)bu.DiscordId == duserid);
 
                 if (buser == null)
                 {
-                    var privChannel = Coding.Methods.GetPrivChannel(duserid);
-
                     string notFoundMessage;
 
                     using (GAFContext context = new GAFContext())
@@ -413,7 +411,7 @@ namespace VerificationModule
 
                     Logger.Log(notFoundMessage, LogLevel.Trace);
 
-                    privChannel.SendMessageAsync($"{notFoundMessage} {duserid}").Wait();
+                    Coding.Discord.SendPrivateMessage(duserid, $"{notFoundMessage} {duserid}");
 
                     if (senderOsu != null)
                         ircMsg($"{notFoundMessage} {duserid}");
@@ -425,13 +423,12 @@ namespace VerificationModule
             if (!string.IsNullOrEmpty(buser.OsuUsername) && buser.IsVerified)
             {
                 Logger.Log("Account already linked: " + osuUser, LogLevel.Trace);
-                var privChannel = Coding.Methods.GetPrivChannel(duserid);
 
                 string alreadyLinkedLocale;
                 using (GAFContext context = new GAFContext())
                     alreadyLinkedLocale = context.BotLocalization.First(l => l.Code.Equals("verifyAccountAlreadyLinked")).String;
 
-                privChannel.SendMessageAsync(alreadyLinkedLocale).Wait();
+                Coding.Discord.SendPrivateMessage(duserid, alreadyLinkedLocale);
 
                 if (senderOsu != null)
                     ircMsg(alreadyLinkedLocale);
@@ -454,11 +451,11 @@ namespace VerificationModule
             }
 
             if (Program.Config.SetVerifiedRole)
-                Coding.Methods.AssignRole(duserid, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId, "Verified, osu: " + osuUser);
+                Coding.Discord.AssignRole(duserid, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId, "Verified, osu: " + osuUser);
             if (Program.Config.SetVerifiedName)
-                Coding.Methods.SetUserName(duserid, (ulong)Program.Config.DiscordGuildId, osuUser.Replace("_", " "), "verified");
+                Coding.Discord.SetUserName(duserid, (ulong)Program.Config.DiscordGuildId, osuUser.Replace("_", " "), "verified");
             
-            var dclient = Coding.Methods.GetClient();
+            var dclient = Coding.Discord.GetClient();
             var duser = dclient.GetUserAsync(duserid).Result;
             var dDmChat = dclient.CreateDmAsync(duser).Result;
 

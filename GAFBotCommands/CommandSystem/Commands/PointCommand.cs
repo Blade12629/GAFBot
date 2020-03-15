@@ -20,7 +20,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new PointCommand() as ICommand);
-            Coding.Methods.Log(typeof(PointCommand).Name + " Registered");
+            Logger.Log(nameof(PointCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -34,15 +34,15 @@ namespace GAFBot.Commands
 
                 if (user == null)
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
+                    Coding.Discord.SendMessage(e.ChannelID, "Something went wrong, either retry or contact @??????#0284");
                     return;
                 }
 
                 Logger.Log("!points executed", LogLevel.Trace);
 
                 DSharpPlus.Entities.DiscordEmbedBuilder builder;
-                var client = Coding.Methods.GetClient();
-                var channel = Coding.Methods.GetChannel(e.ChannelID);
+                var client = Coding.Discord.GetClient();
+                var channel = Coding.Discord.GetChannel(e.ChannelID);
 
                 if (string.IsNullOrEmpty(e.AfterCMD))
                 {
@@ -108,7 +108,7 @@ namespace GAFBot.Commands
 
                     if (!ulong.TryParse(mention, out ulong result))
                     {
-                        Coding.Methods.SendMessage(e.ChannelID, "Could not find mention, this might be a bug");
+                        Coding.Discord.SendMessage(e.ChannelID, "Could not find mention, this might be a bug");
                         return;
                     }
 

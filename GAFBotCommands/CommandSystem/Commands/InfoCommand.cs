@@ -20,7 +20,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new InfoCommand() as ICommand);
-            Coding.Methods.Log(typeof(InfoCommand).Name + " Registered");
+            Logger.Log(nameof(InfoCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -28,13 +28,13 @@ namespace GAFBot.Commands
             ulong userid = 0;
             if (string.IsNullOrEmpty(e.AfterCMD))
             {
-                Coding.Methods.SendMessage(e.ChannelID, DescriptionUsage);
+                Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                 return;
             }
             else if (e.AfterCMD.StartsWith("verifications"))
             {
                 using (Database.GAFContext context = new Database.GAFContext())
-                    Coding.Methods.SendMessage(e.ChannelID, "Currently verified players: " + context.BotUsers.Where(bu => bu.IsVerified));
+                    Coding.Discord.SendMessage(e.ChannelID, "Currently verified players: " + context.BotUsers.Where(bu => bu.IsVerified));
                 return;
             }
             else if (!ulong.TryParse(e.AfterCMD, out userid))
@@ -45,7 +45,7 @@ namespace GAFBot.Commands
 
                 if (!ulong.TryParse(mention, out userid))
                 {
-                    Coding.Methods.SendMessage(e.ChannelID, "Could not parse userid");
+                    Coding.Discord.SendMessage(e.ChannelID, "Could not parse userid");
                     return;
                 }
             }
@@ -57,14 +57,14 @@ namespace GAFBot.Commands
 
             if (user == null)
             {
-                Coding.Methods.SendMessage(e.ChannelID, "Could not get user");
+                Coding.Discord.SendMessage(e.ChannelID, "Could not get user");
                 return;
             }
 
-            var duser = Coding.Methods.GetUser(userid);
+            var duser = Coding.Discord.GetUser(userid);
 
             string responseStr = $"```{Environment.NewLine}User: {duser.Username} ({user.DiscordId}){Environment.NewLine}Access: {user.AccessLevel}{Environment.NewLine}Points:{user.Points}{Environment.NewLine}Registered:{user.RegisteredOn}{Environment.NewLine}Osu:{user.OsuUsername ?? "null"}{Environment.NewLine}Verified:{user.IsVerified}{Environment.NewLine}```";
-            Coding.Methods.SendMessage(e.ChannelID, responseStr);
+            Coding.Discord.SendMessage(e.ChannelID, responseStr);
         }
     }
 }

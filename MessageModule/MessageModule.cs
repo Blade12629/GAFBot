@@ -242,7 +242,7 @@ namespace MessageModule
                     builder.AddField("Metadata", $"Hit/Total Length: {beatmap.hit_length}/{beatmap.total_length}{Environment.NewLine}Circles/Slider/Spinner: {beatmap.count_normal}/{beatmap.count_slider}/{beatmap.count_spinner}{Environment.NewLine}Max Combo: {beatmap.max_combo}{Environment.NewLine}Source: {(beatmap.source == null ? "null" : null)}{Environment.NewLine}Status: {approved}");
                     builder.AddField("Special Info", $"Download Unavailable: {beatmap.download_unavailable}{Environment.NewLine}Audio Unavailable: {beatmap.audio_unavailable}");
                     var embed = builder.Build();
-                    var channel = Coding.Methods.GetChannel(channelId);
+                    var channel = Coding.Discord.GetChannel(channelId);
                     channel.SendMessageAsync(embed: embed).Wait();
                 }
                 catch (Exception ex)
@@ -364,7 +364,7 @@ namespace MessageModule
                 //Hoaq == 154605183714852864
                 if (buser.DiscordId == 154605183714852864 && messageArgs.Message.Content.StartsWith("hiss~"))
                 {
-                    Coding.Methods.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
+                    Coding.Discord.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
                     return;
                 }
 
@@ -393,7 +393,7 @@ namespace MessageModule
                 if (buser != null)
                 {
                     if (buser.IsVerified)
-                        Coding.Methods.AssignRole((ulong)buser.DiscordId, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId);
+                        Coding.Discord.AssignRole((ulong)buser.DiscordId, (ulong)Program.Config.DiscordGuildId, (ulong)Program.Config.VerifiedRoleId);
                 }
             }
 
@@ -729,7 +729,7 @@ namespace MessageModule
 
         public void WelcomeMessage(ulong channel, string welcomeMessage, string mentionString)
         {
-            var welcomeChannel = Coding.Methods.GetChannel(channel);
+            var welcomeChannel = Coding.Discord.GetChannel(channel);
             if (welcomeChannel == null || string.IsNullOrEmpty(Program.Config.WelcomeMessage))
                 return;
 

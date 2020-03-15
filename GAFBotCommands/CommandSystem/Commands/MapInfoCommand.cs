@@ -19,7 +19,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new MapInfoCommand() as ICommand);
-            Coding.Methods.Log(typeof(MapInfoCommand).Name + " Registered");
+            Logger.Log(nameof(MapInfoCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)

@@ -255,58 +255,20 @@ namespace GAFBot
             }
 
         }
-        public static class Methods
+
+        public static class Discord
         {
-            public static void ConsoleLine(string Message)                    
-                => Logger.Log(Message);
-
-            //ToDo
-            public static void Log(string line, bool addDate = true, bool addNewLineAtEnd = true, bool showConsole = true, bool logToFile = true)
-                => Logger.Log("InteractiveCoding: " + line);
-
-            public static string GetProps(string beginsWith)
-            {
-                Type methods = typeof(Methods);
-                List<MethodInfo> mi = methods.GetMethods().ToList();
-
-                string resultReal = "";
-
-                mi.ForEach(m =>
-                {
-                    List<ParameterInfo> param = m.GetParameters().ToList();
-                    string result = $"{m.Name}(";
-                    param.ForEach(p => result += $" {p.ParameterType.Name} {p.Name}");
-                    result += ")";
-                    resultReal += result + Environment.NewLine;
-                });
-
-                return resultReal;
-            }
-
-            #region discord
-            public static void SendMessage(ulong ChannelID, string Message)
-                => Program.Client.SendMessageAsync(GetChannel(ChannelID), Message).Wait();
-
-            public static void CHMessage(ulong ChannelID, string Message)
-            {
-                try
-                {
-                    Program.Client.SendMessageAsync(Program.Client.GetChannelAsync(ChannelID).Result, Message).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log("InteractiveCoding: " + ex.ToString(), LogLevel.Trace);
-                }
-            }
-
-            public static void ChannelMessage(ulong ChannelID, string Message)
-                => CHMessage(ChannelID, Message);
-
             public static DSharpPlus.DiscordClient GetClient()
                 => Program.Client;
 
             public static DSharpPlus.Entities.DiscordGuild GetGuild(ulong id)
                 => GetClient().Guilds.ToList().Find(p => p.Key == id).Value;
+
+            public static DSharpPlus.Entities.DiscordMessage SendMessage(ulong channelID, string message)
+                => Program.Client.SendMessageAsync(GetChannel(channelID), message).Result;
+
+            public static DSharpPlus.Entities.DiscordMessage SendPrivateMessage(ulong userID, string message)
+                => GetPrivChannel(userID)?.SendMessageAsync(message).Result;
 
             public static void React(ulong channelId, ulong messageId, string emote)
             {
@@ -323,33 +285,15 @@ namespace GAFBot
                 dmessage.CreateReactionAsync(DSharpPlus.Entities.DiscordEmoji.FromName(dclient, emote)).Wait();
             }
 
-            public static void SetAccessLevel(ulong id, MessageSystem.AccessLevel accessLevel = MessageSystem.AccessLevel.User)
-            {
-                using (Database.GAFContext context = new Database.GAFContext())
-                {
-                    var buser = context.BotUsers.First(bm => (ulong)bm.DiscordId == id);
-
-                    if (buser == null)
-                        return;
-
-                    buser.AccessLevel = (short)accessLevel;
-
-                    context.BotUsers.Update(buser);
-                    context.SaveChanges();
-                }
-            }
+            public static void ConsoleLine(string Message)
+                => Logger.Log(Message);
 
             public static void SetUserName(ulong userId, ulong guildId, string name, string reason = "null")
             {
-                Log($"InteractiveCoding: Setting {userId} id nickname to {name}");
                 var member = GetMember(userId, guildId);
                 member.ModifyAsync(nickname: name, reason: reason).Wait();
-                Log($"InteractiveCoding: Setted {userId} id nickname to {name}");
             }
-
-            public static void SetAccess(ulong id, int accessLevel)
-                => SetAccessLevel(id, (MessageSystem.AccessLevel)accessLevel);
-
+            
             public static DSharpPlus.Entities.DiscordChannel GetChannel(ulong id)
                 => GetClient().GetChannelAsync(id).Result;
 
@@ -373,7 +317,7 @@ namespace GAFBot
                 var guild = GetGuild(guildId);
                 return guild.Roles.ToList().Find(dr => dr.Id == roleId);
             }
-            
+
             public static void AssignRole(ulong id, ulong guildid, ulong roleid, string reason = "null")
             {
                 try
@@ -392,7 +336,6 @@ namespace GAFBot
                     Logger.Log("InteractiveCoding: " + ex.ToString(), LogLevel.Trace);
                 }
             }
-            
 
             public static bool CreateRole(DSharpPlus.DiscordClient client, ulong GuildID, string RoleName, int r, int g, int b)
             {
@@ -401,81 +344,41 @@ namespace GAFBot
                 dguild.CreateRoleAsync(RoleName, DSharpPlus.Permissions.None, new DSharpPlus.Entities.DiscordColor(r, g, b));
                 return true;
             }
+        }
 
-            #endregion
+        public static class General
+        {
+            public static void SetAccessLevel(ulong id, MessageSystem.AccessLevel accessLevel = MessageSystem.AccessLevel.User)
+            {
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    var buser = context.BotUsers.First(bm => (ulong)bm.DiscordId == id);
+
+                    if (buser == null)
+                        return;
+
+                    buser.AccessLevel = (short)accessLevel;
+
+                    context.BotUsers.Update(buser);
+                    context.SaveChanges();
+                }
+            }
+
+            public static MessageSystem.AccessLevel GetAccessLevel(ulong id)
+            {
+                MessageSystem.AccessLevel access = MessageSystem.AccessLevel.User;
+
+                using (Database.GAFContext context = new Database.GAFContext())
+                {
+                    var user = context.BotUsers.FirstOrDefault(u => u.Id == (long)id);
+
+                    if (user == null)
+                        return access;
+
+                    return (MessageSystem.AccessLevel)user.AccessLevel;
+                }
+            }
             
-            public static Timer MuteTimer;
-            public static List<MuteInfo> Mutes;
-
-            public static Dictionary<ulong, DateTime> MuteList;
-
-            public static bool Mute(int Duration, ulong UserID, ulong GuildID, string reason = "null")
-            {
-                if (Duration <= 0)
-                    Duration = 1;
-
-                if (MuteList == null)
-                    MuteList = new Dictionary<ulong, DateTime>();
-
-                if (MuteTimer == null)
-                {
-                    MuteTimer = new Timer()
-                    {
-                        AutoReset = true,
-                        Interval = 500
-                    };
-
-                    MuteTimer.Elapsed += CheckMutes;
-
-                    MuteTimer.Start();
-                }
-
-                var client = GetClient();
-                var guild = GetGuild(GuildID);
-                var member = guild.GetMemberAsync(UserID).Result;
-                var muteRole = guild.Roles.FirstOrDefault(r => r.Id.Equals(528648021693431808));
-
-                foreach (var role in member.Roles)
-                {
-                    if (role.Id.Equals(muteRole.Id) /* MUTED role*/)
-                    {
-                        guild.RevokeRoleAsync(member, muteRole, "reason: " + reason).Wait();
-                        return true;
-                    }
-                }
-
-                guild.GrantRoleAsync(member, muteRole, "reason: " + reason).Wait();
-
-                return true;
-            }
-
-            public static void CheckMutes(object sender, ElapsedEventArgs arg)
-            {
-                var toUnmute = Mutes.Where(m => m.EndsOn.Ticks <= DateTime.UtcNow.Ticks);
-                var client = GetClient();
-
-                foreach (MuteInfo m in toUnmute)
-                {
-                    var guild = client.GetGuildAsync(m.GuildID).Result;
-                    var member = guild.GetMemberAsync(m.UserID).Result;
-                    var role = guild.Roles.FirstOrDefault(r => r.Id.Equals(528648021693431808)); //MUTED
-                    guild.RevokeRoleAsync(member, role, "unmute 0").Wait();
-                }
-            }
-
-            public class MuteInfo
-            {
-                public ulong UserID { get; set; }
-                public DateTime EndsOn { get; set; }
-                public ulong GuildID { get; set; }
-
-                public MuteInfo(ulong userid, DateTime EndsOn, ulong guildID)
-                {
-                    UserID = userid;
-                    this.EndsOn = EndsOn;
-                    GuildID = guildID;
-                }
-            }
         }
     }
 }

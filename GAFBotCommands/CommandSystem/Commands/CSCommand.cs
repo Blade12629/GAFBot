@@ -17,7 +17,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new CSCommand() as ICommand);
-            Coding.Methods.Log(typeof(CSCommand).Name + " Registered");
+            Logger.Log(nameof(CSCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -30,15 +30,18 @@ namespace GAFBot.Commands
                 {
                     case "r":
                     case "reload":
+                        Coding.Discord.SendMessage(e.ChannelID, "Reloading Commands...");
+
                         Program.LoadCommands();
-                        Coding.Methods.SendMessage(e.ChannelID, "Commands reloaded");
-                        Coding.Methods.Log("Commands reloaded");
+
+                        Coding.Discord.SendMessage(e.ChannelID, "Commands reloaded");
+                        Logger.Log("Commands reloaded");
                         break;
                 }
             }
             catch (Exception ex)
             {
-                Coding.Methods.SendMessage(e.ChannelID, ex.ToString());
+                Coding.Discord.SendMessage(e.ChannelID, ex.ToString());
             }
         }
     }

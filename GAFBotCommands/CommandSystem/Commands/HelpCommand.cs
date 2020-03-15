@@ -24,7 +24,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new HelpCommand());
-            Coding.Methods.Log(typeof(HelpCommand).Name + " Registered");
+            Logger.Log(nameof(HelpCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -43,7 +43,7 @@ namespace GAFBot.Commands
                 if (cmd.AccessLevel <= access)
                     response += Environment.NewLine + $"{cmd.Activator}{cmd.CMD}: {cmd.Description}";
 
-            Coding.Methods.SendMessage(e.ChannelID, $"```{Environment.NewLine}{response}{Environment.NewLine}```");
+            Coding.Discord.SendMessage(e.ChannelID, $"```{Environment.NewLine}{response}{Environment.NewLine}```");
         }
     }
 }

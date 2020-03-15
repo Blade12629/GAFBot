@@ -19,7 +19,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new IsOnlineCommand() as ICommand);
-            Coding.Methods.Log(typeof(IsOnlineCommand).Name + " Registered");
+            Logger.Log(nameof(IsOnlineCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -28,14 +28,14 @@ namespace GAFBot.Commands
             {
 
                 AccessLevel access = (Modules.ModuleHandler.Get("message") as IMessageHandler)?.GetAccessLevel(e.DUserID) ?? AccessLevel.User;
-                var dchannel = Coding.Methods.GetChannel(e.ChannelID);
+                var dchannel = Coding.Discord.GetChannel(e.ChannelID);
 
                 if ((int)access <= (int)AccessLevel.Moderator)
                 {
                     if (!e.GuildID.HasValue)
                         return;
 
-                    var dmember = Coding.Methods.GetMember(e.DUserID, e.GuildID.Value);
+                    var dmember = Coding.Discord.GetMember(e.DUserID, e.GuildID.Value);
                     var roleList = dmember.Roles.Where(r => r.Id == (ulong)Program.Config.RefereeRoleId);
 
                     if (roleList.Count() <= 0)
@@ -53,20 +53,20 @@ namespace GAFBot.Commands
 
                 if (user != null)
                 {
-                    var duser = Coding.Methods.GetUser((ulong)user.DiscordId);
+                    var duser = Coding.Discord.GetUser((ulong)user.DiscordId);
                     discordUser = duser.Username;
                     discordId = duser.Id;
 
                     //Skyfly, test purposes
                     if (discordId == 140896783717892097)
                     {
-                        var dmember = Coding.Methods.GetMember(duser.Id, 147255853341212672);
+                        var dmember = Coding.Discord.GetMember(duser.Id, 147255853341212672);
                         if (dmember.Presence != null)
                             discordStatus = dmember.Presence.Status.ToString();
                     }
                     else if (e.GuildID.HasValue)
                     {
-                        var dmember = Coding.Methods.GetMember(duser.Id, e.GuildID.Value);
+                        var dmember = Coding.Discord.GetMember(duser.Id, e.GuildID.Value);
                         if (dmember.Presence != null)
                             discordStatus = dmember.Presence.Status.ToString();
                     }

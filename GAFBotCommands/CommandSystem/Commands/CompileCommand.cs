@@ -17,7 +17,7 @@ namespace GAFBot.Commands
         public static void Init()
         {
             Program.CommandHandler.Register(new CompileCommand() as ICommand);
-            Coding.Methods.Log(typeof(CompileCommand).Name + " Registered");
+            Logger.Log(nameof(CompileCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
