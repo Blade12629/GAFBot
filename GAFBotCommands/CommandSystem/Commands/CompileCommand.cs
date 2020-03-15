@@ -22,7 +22,25 @@ namespace GAFBot.Commands
 
         public void Activate(CommandEventArg e)
         {
-            Coding.Compiler.Compile(e.AfterCMD, "", e.GuildID ?? 0, e.ChannelID, true);
+            var result = Coding.Compiler.Compile(e.AfterCMD, "", e.GuildID ?? 0, e.ChannelID, true);
+
+            if (result.Key)
+                Coding.Discord.SendMessage(e.ChannelID, "Compiled and ran successfull");
+            else
+            {
+                if (result.Value == null)
+                {
+                    Coding.Discord.SendMessage(e.ChannelID, "Failed to compile/run: unkown reason");
+                    return;
+                }
+
+                Exception ex = result.Value as Exception;
+
+                if (ex == null)
+                    Coding.Discord.SendMessage(e.ChannelID, "Failed to compile: " + (string)result.Value);
+                else
+                    Coding.Discord.SendMessage(e.ChannelID, "Failed to run: " + ex.ToString());
+            }
         }
     }
 }

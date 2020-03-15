@@ -228,7 +228,7 @@ namespace GAFBot
                         {
                             Logger.Log("Compiler: Error at compiling", LogLevel.Trace);
                             result.Diagnostics.Where(diag => diag.IsWarningAsError || diag.Severity == DiagnosticSeverity.Error).ToList().ForEach(diag => Logger.Log("Compiler: " + diag.GetMessage(), LogLevel.Trace));
-                            return new KeyValuePair<bool, object>(false, null);
+                            return new KeyValuePair<bool, object>(false, result.Diagnostics.ElementAt(0).GetMessage());
                         }
 
                         mstream.Seek(0, SeekOrigin.Begin);
@@ -244,14 +244,14 @@ namespace GAFBot
                     }
 
                 }
-                catch (Exception E)
+                catch (Exception ex)
                 {
-                    Logger.Log("Compiler: " + E.ToString(), LogLevel.Trace);
+                    Logger.Log("Compiler: " + ex.ToString(), LogLevel.Trace);
                     if (ShowErrors)
-                        return new KeyValuePair<bool, object>(false, E);
+                        return new KeyValuePair<bool, object>(false, ex);
                 }
 
-                return new KeyValuePair<bool, object>(false, null);
+                return new KeyValuePair<bool, object>(true, null);
             }
 
         }
