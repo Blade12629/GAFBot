@@ -240,7 +240,7 @@ namespace GAFBot.Commands
             {
                 id = id.Substring(0, indexStart - 1);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 id = id.Substring(0, indexStart - 2);
             }

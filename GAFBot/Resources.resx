@@ -121,4 +121,8 @@
   <data name="db" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\db.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;shift_jis</value>
   </data>
+  <data name="DefaultDBConnectionString" xml:space="preserve">
+    <value>server=127.0.0.1;port=3306;user=root;password=root;database=database1;TreatTinyAsBoolean=true;</value>
+    <comment>Default connection string for MySQL db</comment>
+  </data>
 </root>

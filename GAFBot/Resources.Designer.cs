@@ -92,5 +92,14 @@ namespace GAFBot {
                 return ResourceManager.GetString("db", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to server=127.0.0.1;port=3306;user=root;password=root;database=database1;TreatTinyAsBoolean=true;.
+        /// </summary>
+        internal static string DefaultDBConnectionString {
+            get {
+                return ResourceManager.GetString("DefaultDBConnectionString", resourceCulture);
+            }
+        }
     }
 }

@@ -95,6 +95,90 @@ namespace GAFBot
         public static bool Maintenance => _maintenance;
         public static string MaintenanceNotification { get; private set; }
 
+        private static async Task MainTask(string[] args)
+        {
+            try
+            {
+                Rnd = new Random();
+                _checkForMaintenance = true;
+                _maintenanceTask = new Task(CheckForMaintenance);
+
+                if (args != null && args.Length > 0)
+                {
+                    foreach (string arg in args)
+                        ProcessConsoleArg(arg);
+                }
+
+                LoadEnviromentVariables();
+                Logger.Initialize();
+                
+                SaveEvent += () => Logger.Log("Starting Save process");
+                ExitEvent += () =>
+                {
+                    _checkForMaintenance = false;
+
+                    while (_maintenanceTask.Status == TaskStatus.Running)
+                        Task.Delay(5).Wait();
+
+                    Logger.Log("Invoking Save Event");
+                    SaveEvent?.Invoke();
+
+                    if (Client != null)
+                    {
+                        IReadOnlyList<DiscordConnection> connections = Client.GetConnectionsAsync().Result;
+                        if (connections.Count > 0)
+                        {
+                            Logger.Log("Closing Discord connections");
+
+                            Client.DisconnectAsync().Wait();
+                            Client.Dispose();
+                        }
+                    }
+                };
+
+                _handler += new EventHandler(Handler);
+                SetConsoleCtrlHandler(_handler, true);
+
+
+                Modules.ModuleHandler.Initialize();
+
+#if DEBUG
+                Logger.Log("Running on DEBUG mode");
+#else
+                Logger.Log("Running on Release mode");
+#endif
+
+                //Loads the AutoInitAttribute
+                InitializeAssembly(Assembly.GetEntryAssembly());
+
+
+                Logger.Log("Program: Starting AutoSaveTimer");
+                StartSaveTimer();
+
+                Logger.Log("Program: Connecting discord client");
+                await Client.ConnectAsync();
+
+                Logger.Log("Program: GAF Bot initialized");
+                _ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
+
+                //If you want to add custom code that should 
+                //be able to activate after discord is ready
+                //Enter it after this method call
+                _ewh.WaitOne();
+
+                _maintenanceTask.Start();
+
+                Console.WriteLine("Done");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
+            }
+
+            await Task.Delay(-1);
+        }
+
+
         private static void CheckForMaintenance()
         {
             while (_checkForMaintenance)
@@ -138,7 +222,7 @@ namespace GAFBot
 
         private static void ProcessConsoleArg(string arg)
         {
-            switch(arg.ToLower())
+            switch (arg.ToLower())
             {
                 //Creates empty config json in (Install/config.json)
                 case "-createconfig":
@@ -148,6 +232,10 @@ namespace GAFBot
                 //Creates installation sql's to execute against db (Install/)
                 case "-createsql":
                     CreateSQL();
+                    return;
+
+                case "-createdbstring":
+                    CreateDBString();
                     return;
 
                 //Executes all sql's against the db (Install/)
@@ -265,6 +353,16 @@ namespace GAFBot
                 File.WriteAllText(sqlFile.FullName, Resources.db);
             }
 
+            void CreateDBString()
+            {
+                FileInfo dbConFile = new FileInfo(Path.Combine(CurrentPath, "dbconnection.string"));
+
+                if (dbConFile.Exists)
+                    dbConFile.Delete();
+
+                File.WriteAllText(dbConFile.FullName, Resources.DefaultDBConnectionString);
+            }
+
             void InstallSQL()
             {
                 FileInfo sqlFile = new FileInfo(Path.Combine(CurrentPath, "Install/db.sql"));
@@ -283,7 +381,7 @@ namespace GAFBot
                 FileInfo configFile = new FileInfo(Path.Combine(CurrentPath, "Install/config.json"));
                 string json = File.ReadAllText(configFile.FullName);
                 BotConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<BotConfig>(json);
-                
+
                 config.DiscordClientSecretEncrypted = EncryptString(config.DiscordClientSecretEncrypted);
                 config.OsuApiKeyEncrypted = EncryptString(config.OsuApiKeyEncrypted);
                 config.OsuIrcPasswordEncrypted = EncryptString(config.OsuIrcPasswordEncrypted);
@@ -302,87 +400,6 @@ namespace GAFBot
             }
         }
 
-        private static async Task MainTask(string[] args)
-        {
-            Rnd = new Random();
-            _checkForMaintenance = true;
-            _maintenanceTask = new Task(CheckForMaintenance);
-
-            try
-            {
-                if (args != null && args.Length > 0)
-                {
-                    foreach (string arg in args)
-                        ProcessConsoleArg(arg);
-                }
-
-                LoadEnviromentVariables();
-                Logger.Initialize();
-                
-                SaveEvent += () => Logger.Log("Starting Save process");
-                ExitEvent += () =>
-                {
-                    _checkForMaintenance = false;
-
-                    while (_maintenanceTask.Status == TaskStatus.Running)
-                        Task.Delay(5).Wait();
-
-                    Logger.Log("Exit Event: Invoking Save Event");
-                    SaveEvent?.Invoke();
-
-                    if (Client != null)
-                    {
-                        Logger.Log("Exit Event: Closing Discord connections");
-                        IReadOnlyList<DiscordConnection> connections = Client.GetConnectionsAsync().Result;
-                        if (connections.Count > 0)
-                        {
-                            Client.DisconnectAsync().Wait();
-                            Client.Dispose();
-                        }
-                    }
-                };
-
-                _handler += new EventHandler(Handler);
-                SetConsoleCtrlHandler(_handler, true);
-
-
-                Modules.ModuleHandler.Initialize();
-
-#if DEBUG
-                Logger.Log("Running on DEBUG mode");
-#else
-                Logger.Log("Running on Release mode");
-#endif
-
-                //Loads the AutoInitAttribute
-                InitializeAssembly(Assembly.GetEntryAssembly());
-
-
-                Logger.Log("Program: Starting AutoSaveTimer");
-                StartSaveTimer();
-
-                Logger.Log("Program: Connecting discord client");
-                await Client.ConnectAsync();
-
-                Logger.Log("Program: GAF Bot initialized");
-                _ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
-
-                //If you want to add custom code that should 
-                //be able to activate after discord is ready
-                //Enter it after this method call
-                _ewh.WaitOne();
-
-                _maintenanceTask.Start();
-
-                Console.WriteLine("Done");
-            }
-            catch (Exception ex)
-            {
-                Logger.Log(ex.ToString(), LogLevel.ERROR);
-            }
-
-            await Task.Delay(-1);
-        }
 
         #region load
 
