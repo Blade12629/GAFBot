@@ -99,9 +99,11 @@ namespace GAFBot
         {
             try
             {
+                Console.WriteLine("Welcome to GAFBot v0.0.1");
                 Rnd = new Random();
                 _checkForMaintenance = true;
                 _maintenanceTask = new Task(CheckForMaintenance);
+                LoadEnviromentVariables();
 
                 if (args != null && args.Length > 0)
                 {
@@ -109,9 +111,8 @@ namespace GAFBot
                         ProcessConsoleArg(arg);
                 }
 
-                LoadEnviromentVariables();
                 Logger.Initialize();
-                
+
                 SaveEvent += () => Logger.Log("Starting Save process");
                 ExitEvent += () =>
                 {
@@ -172,7 +173,16 @@ namespace GAFBot
             }
             catch (Exception ex)
             {
-                Logger.Log(ex.ToString(), LogLevel.ERROR);
+                try
+                {
+                    Logger.Log(ex.ToString(), LogLevel.ERROR);
+                }
+                catch (Exception ex2)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(ex.ToString());
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
             }
 
             await Task.Delay(-1);
@@ -367,11 +377,21 @@ namespace GAFBot
             {
                 FileInfo sqlFile = new FileInfo(Path.Combine(CurrentPath, "Install/db.sql"));
 
-                string sql = File.ReadAllText(sqlFile.FullName);
-
+                List<string> sql = File.ReadAllLines(sqlFile.FullName).Where(l => !string.IsNullOrEmpty(l)).ToList();
+                
                 using (Database.GAFContext context = new Database.GAFContext())
                 {
-                    context.Database.ExecuteSqlRaw(sql);
+                    for (int i = 0; i < sql.Count; i++)
+                    {
+                        string line = sql[i];
+
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        
+                        context.Database.ExecuteSqlRaw(line);
+                        Console.WriteLine($"{i + 1}/{sql.Count}");
+                    }
+                    
                     context.SaveChanges();
                 }
             }
@@ -397,6 +417,81 @@ namespace GAFBot
             void Exit()
             {
                 Environment.Exit(0);
+            }
+        }
+
+        private class LoadingBar
+        {
+            public string Title;
+            public char Symbol;
+            public double Current;
+            public double Max;
+            public int MaxPerLine = 60;
+
+            private System.Timers.Timer _refreshTimer;
+            private int _next;
+            private readonly char[] _loadSymbols = new char[]
+            {
+                '|',
+                '/',
+                '-',
+                '\\',
+                '|',
+                '/',
+                '-',
+                '\\'
+            };
+
+            public void Advance(double amount)
+                => Current += amount;
+
+
+            public LoadingBar(double max, char loadingSymbol, string title, double current = 0)
+            {
+                Title = title;
+                Symbol = loadingSymbol;
+                Max = max;
+                Current = current;
+
+                _refreshTimer = new System.Timers.Timer()
+                {
+                    Interval = 400,
+                    AutoReset = true
+                };
+
+                _refreshTimer.Elapsed += (s, e) => Update();
+            }
+
+            public void Start()
+            {
+                _refreshTimer.Start();
+            }
+
+            public void Stop()
+            {
+                _refreshTimer.Stop();
+            }
+
+            public void Update()
+            {
+                string toWrite = Title + Environment.NewLine;
+                double percentage = Max / 100.0 * Current;
+
+                char loadingChar = _loadSymbols[_next];
+
+                _next++;
+                if (_next >= _loadSymbols.Length)
+                    _next = 0;
+
+                int amount = (int)(MaxPerLine / 100.0 * percentage);
+                
+                for (int i = 0; i < amount; i++)
+                    toWrite += Symbol;
+
+                toWrite += $"> {loadingChar} {percentage}% ({Current}/{Max})";
+
+                Console.Clear();
+                Console.WriteLine(toWrite);
             }
         }
 
@@ -562,12 +657,6 @@ namespace GAFBot
 
             if (File.Exists(dbFile))
                 Environment.SetEnvironmentVariable("DBConnectionString", File.ReadAllText(dbFile), EnvironmentVariableTarget.Process);
-            else
-            {
-                Logger.Log("Could not find db connection string " + dbFile);
-                Environment.SetEnvironmentVariable("DBConnectionString", "null", EnvironmentVariableTarget.Process);
-                return;
-            }
         }
 
         private static bool _lastStateMaint;
