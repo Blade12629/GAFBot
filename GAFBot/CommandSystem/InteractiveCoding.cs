@@ -284,10 +284,7 @@ namespace GAFBot
 
                 dmessage.CreateReactionAsync(DSharpPlus.Entities.DiscordEmoji.FromName(dclient, emote)).Wait();
             }
-
-            public static void ConsoleLine(string Message)
-                => Logger.Log(Message);
-
+            
             public static void SetUserName(ulong userId, ulong guildId, string name, string reason = "null")
             {
                 var member = GetMember(userId, guildId);
