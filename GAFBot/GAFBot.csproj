@@ -45,7 +45,6 @@
     <PackageReference Include="DSharpPlus" Version="3.2.3" />
     <PackageReference Include="DSharpPlus.WebSocket.WebSocket4NetCore" Version="3.2.3" />
     <PackageReference Include="Fleck" Version="1.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.0.0" />
     <PackageReference Include="NetIrc2" Version="1.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
