@@ -21,6 +21,10 @@
     <OutputPath>..\compiled\</OutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\compiled\</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\GAFBotCommands\GAFBotCommands.csproj" />
     <ProjectReference Include="..\GAFBot\GAFBot.csproj" />
