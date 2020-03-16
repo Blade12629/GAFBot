@@ -188,6 +188,15 @@ namespace GAFBot
             await Task.Delay(-1);
         }
 
+        private static void A()
+        {
+            using (GAFBot.Database.GAFContext context = new Database.GAFContext())
+            {
+                string locale = string.Format(context.BotLocalization.First(l => l.Code.Equals("testLocale")).String, "TestString");
+
+                Coding.Discord.SendMessage(578984727583784980, locale);
+            }
+        }
 
         private static void CheckForMaintenance()
         {

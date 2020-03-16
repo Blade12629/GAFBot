@@ -348,37 +348,43 @@ namespace VerificationModule
                 return null;
             }
 
+            BotVerifications bver;
+            using (GAFContext context = new GAFContext())
+                bver = context.BotVerifications.FirstOrDefault(bv => (ulong)bv.DiscordUserId == duserid);
+
+            if (bver != null)
+            {
+                string verifyAlreadyActiveLocale;
+                using (GAFContext context = new GAFContext())
+                    verifyAlreadyActiveLocale = context.BotLocalization.First(l => l.Code.Equals("verifyAlreadyActive")).String;
+
+                Coding.Discord.SendPrivateMessage(duserid, $"{verifyAlreadyActiveLocale} {bver.Code}");
+                return "active";
+            }
+
+            byte[] verificationKey = new byte[2];
+            RandomNumberGenerator.Fill(verificationKey);
+
+            string verificationStr = "";
+
+            for (int i = 0; i < verificationKey.Length; i++)
+                verificationStr += verificationKey[i].ToString();
+
+            bver = new BotVerifications()
+            {
+                DiscordUserId = (long)duserid,
+                Code = verificationStr,
+            };
+
             using (GAFContext context = new GAFContext())
             {
-                var bver = context.BotVerifications.FirstOrDefault(bv => (ulong)bv.DiscordUserId == duserid);
-
-                if (bver != null)
-                {
-                    Coding.Discord.SendPrivateMessage(duserid, "Your verification is already active, code: " + bver.Code);
-                    return "active";
-                }
-
-                byte[] verificationKey = new byte[2];
-                RandomNumberGenerator.Fill(verificationKey);
-
-                string verificationStr = "";
-
-                for (int i = 0; i < verificationKey.Length; i++)
-                    verificationStr += verificationKey[i].ToString();
-
-                bver = new BotVerifications()
-                {
-                    DiscordUserId = (long)duserid,
-                    Code = verificationStr,
-                };
-
                 context.BotVerifications.Add(bver);
                 context.SaveChanges();
-
-                Logger.Log("Verification started for " + duserid);
-
-                return verificationStr;
             }
+
+            Logger.Log("Verification started for " + duserid);
+
+            return verificationStr;
         }
         
         /// <summary>

@@ -10,7 +10,3 @@ namespace GAFBot.Database.Models
         public string Code { get; set; }
     }
 }
-
-/// <summary>
-/// dUserId, code, codeEz
-/// </summary>

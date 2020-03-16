@@ -153,7 +153,7 @@ namespace GAFBot
                     #region Encapsulate Code into a single Method
 
                     string baseMethodCode =
-                        "var dclient = Coding.Methods.GetClient();" + Environment.NewLine;
+                        "var dclient = Coding.Discord.GetClient();" + Environment.NewLine;
 
                     string code =
                         "using System;" + Environment.NewLine +
@@ -212,6 +212,10 @@ namespace GAFBot
                         MetadataReference.CreateFromFile(typeof(DSharpPlus.AsyncEvent).Assembly.Location),
                         MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
                         MetadataReference.CreateFromFile(typeof(System.Collections.Concurrent.Partitioner).Assembly.Location),
+                        MetadataReference.CreateFromFile(typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly.Location),
+                        MetadataReference.CreateFromFile(typeof(System.ComponentModel.IListSource).Assembly.Location),
+                        MetadataReference.CreateFromFile(Assembly.Load("Microsoft.Bcl.AsyncInterfaces, Version=1.0.0.0").Location),
+                        MetadataReference.CreateFromFile(Assembly.Load("System.Linq.Expressions, Version=0.0.0.0").Location),
                         MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 };
 

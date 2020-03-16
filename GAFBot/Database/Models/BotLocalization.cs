@@ -9,5 +9,8 @@ namespace GAFBot.Database.Models
         public int Id { get; set; }
         public string Code { get; set; }
         public string String { get; set; }
+
+        public string Format(params string[] args)
+            => string.Format(String, args);
     }
 }
