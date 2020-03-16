@@ -207,7 +207,7 @@ namespace VerificationModule
                 Logger.Log($"IRC: {nickName} - Verifying", LogLevel.Trace);
 
                 using (GAFContext context = new GAFContext())
-                    ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyVerifying")).Code);
+                    ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyVerifying")).String);
                 
                 VerifyUser((ulong)bver.DiscordUserId, nickName, e.Sender.Nickname);
 
