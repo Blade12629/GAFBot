@@ -249,6 +249,10 @@ namespace GAFBot.Database
                     .HasColumnName("match_id")
                     .HasColumnType("bigint(20)");
 
+                entity.Property(e => e.BeatmapId)
+                    .HasColumnName("beatmap_id")
+                    .HasColumnType("bigint(20)");
+
                 entity.Property(e => e.Accuracy)
                     .HasColumnName("accuracy")
                     .HasColumnType("float");

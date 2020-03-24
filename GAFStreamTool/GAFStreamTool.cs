@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -17,6 +18,7 @@ namespace GAFStreamTool
     public partial class GAFStreamTool : Form
     {
         private readonly List<PickComponent> _pickComponents;
+        public IReadOnlyList<PickComponent> PickComponents => _pickComponents;
 
         public GAFStreamTool()
         {
@@ -27,7 +29,30 @@ namespace GAFStreamTool
                 new PickComponent(TB_Pick2PickedTeam, TB_Pick2PickedBy, L_Pick1PickedByDesc, PB_Pick2Image, "null"),
                 new PickComponent(TB_Pick3PickedTeam, TB_Pick3PickedBy, L_Pick1PickedByDesc, PB_Pick3Image, "null"),
             };
-            L_Loading.Visible = false;
+
+            if (!Directory.Exists("cachedImage\\"))
+                Directory.CreateDirectory("cachedImage\\");
+
+            Task.Run(() =>
+            {
+                while (Program.SettingsForm == null)
+                    Task.Delay(1).Wait();
+                
+                Program.SettingsForm.InitializeForeAndBackgroundColor();
+
+                if (InvokeRequired)
+                    Invoke(new Action(() => { L_Loading.Visible = false; }));
+                else
+                    L_Loading.Visible = false;
+            });
+        }
+        private IEnumerable<Component> EnumerateComponents()
+        {
+            return from field in GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                   where typeof(Component).IsAssignableFrom(field.FieldType)
+                   let component = (Component)field.GetValue(this)
+                   where component != null
+                   select component;
         }
 
         public Image CreateTestImage()
@@ -144,9 +169,10 @@ namespace GAFStreamTool
                         comp.TBTeam.Visible = false;
                         comp.TBPickedBy.Visible = false;
                         comp.PBImage.Visible = false;
+                        comp.LPickedByInfo.Visible = false;
 
-                        comp.TBTeam.Text = null;
-                        comp.TBPickedBy.Text = null;
+                        comp.TBTeam.Text = "";
+                        comp.TBPickedBy.Text = "";
                         comp.PBImage.Image = null;
                     }));
                     return;
@@ -155,9 +181,10 @@ namespace GAFStreamTool
                 comp.TBTeam.Visible = false;
                 comp.TBPickedBy.Visible = false;
                 comp.PBImage.Visible = false;
+                comp.LPickedByInfo.Visible = false;
 
-                comp.TBTeam.Text = null;
-                comp.TBPickedBy.Text = null;
+                comp.TBTeam.Text = "";
+                comp.TBPickedBy.Text = "";
                 comp.PBImage.Image = null;
             }
 
@@ -177,6 +204,7 @@ namespace GAFStreamTool
                     comp.TBTeam.Visible = true;
                     comp.TBPickedBy.Visible = true;
                     comp.PBImage.Visible = true;
+                    comp.LPickedByInfo.Visible = true;
                 }));
                 return;
             }
@@ -193,6 +221,7 @@ namespace GAFStreamTool
             comp.TBTeam.Visible = true;
             comp.TBPickedBy.Visible = true;
             comp.PBImage.Visible = true;
+            comp.LPickedByInfo.Visible = true;
         }
 
         public void CheckForUpdatedPics(params Pick[] picks)
@@ -204,12 +233,16 @@ namespace GAFStreamTool
                 0
             };
 
+            List<Pick> notFoundPicks = new List<Pick>();
             foreach(Pick p in picks)
             {
                 PickComponent comp = _pickComponents.FirstOrDefault(pc => pc.IsPickedBy(p));
 
                 if (comp == null)
+                {
+                    notFoundPicks.Add(p);
                     continue;
+                }
 
                 slotsUsed[comp.Id - 1] = 1;
 
@@ -220,8 +253,21 @@ namespace GAFStreamTool
             }
 
             for (int i = 0; i < slotsUsed.Length; i++)
+            {
                 if (slotsUsed[i] == 0)
-                    SetPick(i + 1);
+                {
+                    if (notFoundPicks.Count > 0)
+                    {
+                        Pick p = notFoundPicks[0];
+                        UpdatePick(i + 1, p);
+                     
+                        notFoundPicks.RemoveAt(0);
+                    }
+                    else
+                        SetPick(i + 1);
+                }
+            }
+            
         }
 
         public void UpdatePick(int slot, Pick pick)

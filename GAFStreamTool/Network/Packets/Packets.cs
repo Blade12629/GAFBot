@@ -90,7 +90,7 @@ namespace GAFStreamTool.Network.Packets
 
                 Pick.Picks.AddRange(picks);
 
-                Program.MainForm.CheckForUpdatedPics();
+                Program.MainForm.CheckForUpdatedPics(picks.ToArray());
             }
 
             public void Send(PacketWriter writer, Client client, params object[] data)
@@ -103,18 +103,41 @@ namespace GAFStreamTool.Network.Packets
         public class PingPacket : IPacket
         {
             public byte Id => 3;
+            public static Action<string> OnPingRecieved;
+            public bool Pong;
             
+            public PingPacket(bool pong, Action<string> onPingRecieved)
+            {
+                if (OnPingRecieved == null)
+                    OnPingRecieved = onPingRecieved;
+                else
+                    OnPingRecieved += onPingRecieved;
+
+                Pong = pong;
+            }
+
+            public PingPacket()
+            {
+
+            }
+
             public void Handle(PacketReader reader, Client client)
             {
                 string str = reader.ReadString();
 
                 if (str.Equals("Ping"))
-                    Send(new PacketWriter(reader.Packet), client, new object[] { true });
+                {
+                    Pong = true;
+                    Send(new PacketWriter(this), client);
+                }
+
+                OnPingRecieved?.Invoke(str);
+                OnPingRecieved = null;
             }
             
             public void Send(PacketWriter writer, Client client, params object[] data)
             {
-                if (data != null && data.Length > 0)
+                if (Pong)
                     writer.Write("Pong");
                 else
                     writer.Write("Ping");

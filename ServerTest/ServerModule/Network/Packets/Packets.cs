@@ -26,6 +26,7 @@ namespace ServerModule.Network.Packets
         {
             public byte Id => (int)PacketId.AuthPacket;
 
+            [Obsolete("Test")]
             public void Handle(PacketReader reader, Client client)
             {
                 string encryptedKey = reader.ReadString();
@@ -33,15 +34,20 @@ namespace ServerModule.Network.Packets
                 Console.WriteLine("Recieved Auth Key: " + encryptedKey);
 
                 byte authenticated = 0;
-                BotApiKey key;
-                using (GAFContext context = new GAFContext())
+                BotApiKey key = new BotApiKey()
                 {
-                    key = context.BotApiKey.FirstOrDefault(k => k.Key.Equals(encryptedKey));
+                    DiscordId = 140896783717892097,
+                    Key = "1+UdChRTEQK996rY3iF9Uw=="
+                };
+                authenticated = 1;
+                //using (GAFContext context = new GAFContext())
+                //{
+                //    key = context.BotApiKey.FirstOrDefault(k => k.Key.Equals(encryptedKey));
 
-                    if (key != null)
-                        authenticated = 1;
-                }
-
+                //    if (key != null)
+                //        authenticated = 1;
+                //}
+                
                 if (authenticated == 1)
                 {
                     client.LoadEncryptionKey((ulong)key.DiscordId);
@@ -84,10 +90,33 @@ namespace ServerModule.Network.Packets
                 Console.WriteLine("Reading Match");
                 string match = reader.ReadString();
                 Console.WriteLine("Got Match " + match);
-                
-                BotPick[] picks;
-                using (GAFContext context = new GAFContext())
-                    picks = context.BotPick.Where(p => p.Match.Equals(match, StringComparison.CurrentCultureIgnoreCase)).ToArray();
+
+                BotPick[] picks = new BotPick[]
+                {
+                    new BotPick()
+                    {
+                        Image = "https://cdn.discordapp.com/avatars/592057331777273867/264ac131be1a2d653ffd8c6e0c280c33.png",
+                        Match = "Test1 vs Test2",
+                        PickedBy = "Test User 1",
+                        Team = "Test2"
+                    },
+                    new BotPick()
+                    {
+                        Image = "https://cdn.discordapp.com/avatars/592057331777273867/264ac131be1a2d653ffd8c6e0c280c33.png",
+                        Match = "Test1 vs Test2",
+                        PickedBy = "Test User 2",
+                        Team = "Test2"
+                    },
+                    new BotPick()
+                    {
+                        Image = "https://cdn.discordapp.com/avatars/592057331777273867/264ac131be1a2d653ffd8c6e0c280c33.png",
+                        Match = "Test1 vs Test2",
+                        PickedBy = "Test User 3",
+                        Team = "Test1"
+                    },
+                };
+                //using (GAFContext context = new GAFContext())
+                //    picks = context.BotPick.Where(p => p.Match.Equals(match, StringComparison.CurrentCultureIgnoreCase)).ToArray();
 
                 Picks = new Pick[picks.Length];
 

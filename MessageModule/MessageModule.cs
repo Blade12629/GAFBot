@@ -621,7 +621,9 @@ namespace MessageModule
                         }
 
                         BotAnalyzerScore highAccScore = ConvertScore(analyzerResult.HighestAccuracyScore, analyzerResult.MatchId);
+                        highAccScore.BeatmapId = analyzerResult.HighestAccuracyBeatmap.id ?? -1;
                         BotAnalyzerScore highScore = ConvertScore(analyzerResult.HighestScore, analyzerResult.MatchId);
+                        highScore.BeatmapId = analyzerResult.HighestAccuracyBeatmap.id ?? -1;
 
                         EntityEntry<BotAnalyzerScore> highAccScoreEnt;
                         EntityEntry<BotAnalyzerScore> highScoreEnt;
@@ -629,6 +631,15 @@ namespace MessageModule
                         {
                             highAccScoreEnt = context.BotAnalyzerScore.Add(highAccScore);
                             highScoreEnt = context.BotAnalyzerScore.Add(highScore);
+                            
+                            BotAnalyzerScore score;
+                            foreach (var scorePair in analyzerResult.Scores)
+                            {
+                                score = ConvertScore(scorePair.Item2, analyzerResult.MatchId);
+                                score.BeatmapId = scorePair.Item1;
+
+                                context.BotAnalyzerScore.Add(score);
+                            }
 
                             context.SaveChanges();
                         }

@@ -20,7 +20,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageModule", "MessageMod
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GAFStreamTool", "GAFStreamTool\GAFStreamTool.csproj", "{0516F334-D934-471C-9BC9-92B24B4EF72C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerModule", "ServerModule\ServerModule.csproj", "{8C8F6B28-C957-4929-A3CA-D7566142EB92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerModule", "ServerModule\ServerModule.csproj", "{8C8F6B28-C957-4929-A3CA-D7566142EB92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerTest", "ServerTest\ServerTest.csproj", "{08AE5630-81BD-460B-9129-ABEF3E797C15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,6 +80,14 @@ Global
 		{8C8F6B28-C957-4929-A3CA-D7566142EB92}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8C8F6B28-C957-4929-A3CA-D7566142EB92}.Release|x64.ActiveCfg = Release|Any CPU
 		{8C8F6B28-C957-4929-A3CA-D7566142EB92}.Release|x64.Build.0 = Release|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Debug|x64.Build.0 = Debug|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Release|x64.ActiveCfg = Release|Any CPU
+		{08AE5630-81BD-460B-9129-ABEF3E797C15}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

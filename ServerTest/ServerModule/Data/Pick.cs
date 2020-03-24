@@ -1,13 +1,11 @@
-﻿using GAFStreamTool.Network.Packets;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
 
-namespace GAFStreamTool.Data
+namespace ServerModule.Data
 {
     public class Pick : IEquatable<Pick>
     {
@@ -21,57 +19,6 @@ namespace GAFStreamTool.Data
 
                 return _picks;
             }
-        }
-
-        public static void AddPick(Pick p)
-        {
-            _picks.Add(p);
-        }
-
-        public static bool ContainsPickedBy(Pick p)
-        {
-            Pick pi = _picks.FirstOrDefault(pic => pic.PickedBy.Equals(p.PickedBy));
-
-            if (pi == null)
-                return false;
-            else
-                return true;
-        }
-
-        public static void RemovePicks(Pick p)
-        {
-            _picks.RemoveAll(pic => pic.PickedBy.Equals(p.PickedBy));
-        }
-
-        private static Timer _pickUpdateTimer;
-
-        private static void SendPickUpdateRequest()
-        {
-            if (string.IsNullOrEmpty(Program.MatchToTrack))
-                return;
-
-            Packets.MatchPicksPacket matchPicks = new Packets.MatchPicksPacket(Program.MatchToTrack);
-            PacketWriter writer = new PacketWriter(matchPicks);
-            matchPicks.Send(writer, Program.Client);
-        }
-
-        public static void StartAutoPickUpdate()
-        {
-            _pickUpdateTimer = new Timer()
-            {
-                Interval = 5000,
-                AutoReset = true
-            };
-            _pickUpdateTimer.Elapsed += (s, e) => SendPickUpdateRequest();
-            _pickUpdateTimer.Start();
-        }
-
-        public static void StopAutoPickUpdate()
-        {
-            if (_pickUpdateTimer == null || !_pickUpdateTimer.Enabled)
-                return;
-
-            _pickUpdateTimer.Stop();
         }
 
         public string PickedBy;

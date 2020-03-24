@@ -26,6 +26,13 @@ namespace GAFBot.Osu
             {
                 string matchName = history.Events.FirstOrDefault(ob => ob.Detail.Type == "other").Detail.MatchName;
                 HistoryJson.Game[] games = GetData.GetMatches(history);
+                //beatmapid, score
+                List<(long, HistoryJson.Score)> scores = new List<(long, HistoryJson.Score)>();
+
+                foreach(var game in games)
+                    foreach (var score in game.scores)
+                        scores.Add((game.beatmap.id ?? -1, score));
+
                 var HighestScoreRankingResult = CalculateHighestRankingAndPlayCount(games, history, true);
                 
                 (string, string) teamNames = GetVersusTeamNames(matchName);
@@ -51,6 +58,7 @@ namespace GAFBot.Osu
 
                     LosingTeam = losingTeam == TeamColor.Red ? teamNames.Item2 : teamNames.Item1,
                     LosingTeamWins = losingTeam == TeamColor.Red ? wins.Item2 : wins.Item1,
+                    Scores = scores.ToArray(),
 
                     TimeStamp = history.Events.Last().TimeStamp
                 };

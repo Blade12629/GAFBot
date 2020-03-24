@@ -54,6 +54,7 @@
             this.B_RefreshPicks = new System.Windows.Forms.Button();
             this.B_Connect = new System.Windows.Forms.Button();
             this.PB_ConnectionState = new System.Windows.Forms.PictureBox();
+            this.B_TestPing = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextR)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextG)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextB)).BeginInit();
@@ -79,7 +80,7 @@
             // 
             this.NUM_TextR.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_TextR.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -97,6 +98,7 @@
             0,
             0,
             0});
+            this.NUM_TextR.ValueChanged += new System.EventHandler(this.NUM_TextR_ValueChanged);
             // 
             // label2
             // 
@@ -124,7 +126,7 @@
             // 
             this.NUM_TextG.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_TextG.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -142,6 +144,7 @@
             0,
             0,
             0});
+            this.NUM_TextG.ValueChanged += new System.EventHandler(this.NUM_TextG_ValueChanged);
             // 
             // label4
             // 
@@ -158,7 +161,7 @@
             // 
             this.NUM_TextB.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_TextB.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -176,6 +179,7 @@
             0,
             0,
             0});
+            this.NUM_TextB.ValueChanged += new System.EventHandler(this.NUM_TextB_ValueChanged);
             // 
             // label5
             // 
@@ -250,7 +254,7 @@
             // 
             this.NUM_BackgroundB.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_BackgroundB.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -268,6 +272,7 @@
             0,
             0,
             0});
+            this.NUM_BackgroundB.ValueChanged += new System.EventHandler(this.NUM_BackgroundB_ValueChanged);
             // 
             // label8
             // 
@@ -284,7 +289,7 @@
             // 
             this.NUM_BackgroundG.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_BackgroundG.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -302,6 +307,7 @@
             0,
             0,
             0});
+            this.NUM_BackgroundG.ValueChanged += new System.EventHandler(this.NUM_BackgroundG_ValueChanged);
             // 
             // label9
             // 
@@ -318,7 +324,7 @@
             // 
             this.NUM_BackgroundR.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.NUM_BackgroundR.Increment = new decimal(new int[] {
-            5,
+            20,
             0,
             0,
             0});
@@ -336,6 +342,7 @@
             0,
             0,
             0});
+            this.NUM_BackgroundR.ValueChanged += new System.EventHandler(this.NUM_BackgroundR_ValueChanged);
             // 
             // label10
             // 
@@ -408,12 +415,23 @@
             this.PB_ConnectionState.TabIndex = 29;
             this.PB_ConnectionState.TabStop = false;
             // 
+            // B_TestPing
+            // 
+            this.B_TestPing.Location = new System.Drawing.Point(202, 180);
+            this.B_TestPing.Name = "B_TestPing";
+            this.B_TestPing.Size = new System.Drawing.Size(63, 23);
+            this.B_TestPing.TabIndex = 30;
+            this.B_TestPing.Text = "Test Ping";
+            this.B_TestPing.UseVisualStyleBackColor = true;
+            this.B_TestPing.Click += new System.EventHandler(this.B_TestPing_Click);
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(468, 247);
+            this.Controls.Add(this.B_TestPing);
             this.Controls.Add(this.PB_ConnectionState);
             this.Controls.Add(this.B_Connect);
             this.Controls.Add(this.B_RefreshPicks);
@@ -485,5 +503,6 @@
         private System.Windows.Forms.Button B_RefreshPicks;
         private System.Windows.Forms.Button B_Connect;
         private System.Windows.Forms.PictureBox PB_ConnectionState;
+        private System.Windows.Forms.Button B_TestPing;
     }
 }

@@ -21,6 +21,7 @@ namespace GAFStreamTool
         public static string MatchToTrack;
 
         private static Thread _settingsThread;
+        private static Thread _mainThread;
 
         /// <summary>
         /// The main entry point for the application.
@@ -39,8 +40,8 @@ namespace GAFStreamTool
             if (args != null && args.Length > 0 && args[0].StartsWith("-install"))
             {
                 RegistryEditor.Set("ColorTextR", Config.RGBText[0]);
-                RegistryEditor.Set("ColorTextG", Config.RGBText[0]);
-                RegistryEditor.Set("ColorTextB", Config.RGBText[0]);
+                RegistryEditor.Set("ColorTextG", Config.RGBText[1]);
+                RegistryEditor.Set("ColorTextB", Config.RGBText[2]);
 
                 RegistryEditor.Set("ColorBackgroundR", Config.RGBBackground[0]);
                 RegistryEditor.Set("ColorBackgroundG", Config.RGBBackground[1]);
@@ -115,9 +116,16 @@ namespace GAFStreamTool
             _settingsThread.SetApartmentState(ApartmentState.STA);
             _settingsThread.Start();
 
-            Application.Run(MainForm);
+            _mainThread = new Thread(new ThreadStart(() =>
+            {
+                Application.Run(MainForm);
+                Client.Dispose();
+                Environment.Exit(0);
+            }));
+            _mainThread.SetApartmentState(ApartmentState.STA);
+            _mainThread.Start();
 
-            Client.Dispose();
+            Task.Delay(-1).Wait();
         }
     }
 }

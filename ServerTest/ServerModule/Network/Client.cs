@@ -277,7 +277,7 @@ namespace ServerModule.Network
                 }
                 catch (Exception)
                 {
-                    Logger.Log("Lost connection to client: " + Id);
+                    Console.WriteLine("Lost connection to client: " + Id);
                     Server.RemoveClient(Id);
                     return;
                 }
@@ -297,7 +297,7 @@ namespace ServerModule.Network
             }
             catch (Exception)
             {
-                Logger.Log("Lost connection to client: " + Id);
+                Console.WriteLine("Lost connection to client: " + Id);
                 Server.RemoveClient(Id);
                 return;
             }
@@ -379,7 +379,7 @@ namespace ServerModule.Network
             }
             catch (Exception)
             {
-                Logger.Log("Lost connection to client: " + Id);
+                Console.WriteLine("Lost connection to client: " + Id);
                 Server.RemoveClient(Id);
             }
         }
@@ -392,7 +392,7 @@ namespace ServerModule.Network
             }
             catch (Exception)
             {
-                Logger.Log("Lost connection to client: " + Id);
+                Console.WriteLine("Lost connection to client: " + Id);
                 Server.RemoveClient(Id);
             }
         }

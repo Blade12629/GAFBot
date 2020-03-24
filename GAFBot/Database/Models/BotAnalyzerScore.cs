@@ -9,6 +9,7 @@ namespace GAFBot.Database.Models
         public int Id { get; set; }
         public long UserId { get; set; }
         public long MatchId { get; set; }
+        public long BeatmapId { get; set; }
         public float Accuracy { get; set; }
         public string Mods { get; set; }
         public long Score { get; set; }
