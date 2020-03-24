@@ -140,7 +140,6 @@ namespace GAFBot
                 _handler += new EventHandler(Handler);
                 SetConsoleCtrlHandler(_handler, true);
 
-
                 Modules.ModuleHandler.Initialize();
 
 #if DEBUG
@@ -186,16 +185,6 @@ namespace GAFBot
             }
 
             await Task.Delay(-1);
-        }
-
-        private static void A()
-        {
-            using (GAFBot.Database.GAFContext context = new Database.GAFContext())
-            {
-                string locale = string.Format(context.BotLocalization.First(l => l.Code.Equals("testLocale")).String, "TestString");
-
-                Coding.Discord.SendMessage(578984727583784980, locale);
-            }
         }
 
         private static void CheckForMaintenance()
@@ -428,82 +417,6 @@ namespace GAFBot
                 Environment.Exit(0);
             }
         }
-
-        private class LoadingBar
-        {
-            public string Title;
-            public char Symbol;
-            public double Current;
-            public double Max;
-            public int MaxPerLine = 60;
-
-            private System.Timers.Timer _refreshTimer;
-            private int _next;
-            private readonly char[] _loadSymbols = new char[]
-            {
-                '|',
-                '/',
-                '-',
-                '\\',
-                '|',
-                '/',
-                '-',
-                '\\'
-            };
-
-            public void Advance(double amount)
-                => Current += amount;
-
-
-            public LoadingBar(double max, char loadingSymbol, string title, double current = 0)
-            {
-                Title = title;
-                Symbol = loadingSymbol;
-                Max = max;
-                Current = current;
-
-                _refreshTimer = new System.Timers.Timer()
-                {
-                    Interval = 400,
-                    AutoReset = true
-                };
-
-                _refreshTimer.Elapsed += (s, e) => Update();
-            }
-
-            public void Start()
-            {
-                _refreshTimer.Start();
-            }
-
-            public void Stop()
-            {
-                _refreshTimer.Stop();
-            }
-
-            public void Update()
-            {
-                string toWrite = Title + Environment.NewLine;
-                double percentage = Max / 100.0 * Current;
-
-                char loadingChar = _loadSymbols[_next];
-
-                _next++;
-                if (_next >= _loadSymbols.Length)
-                    _next = 0;
-
-                int amount = (int)(MaxPerLine / 100.0 * percentage);
-                
-                for (int i = 0; i < amount; i++)
-                    toWrite += Symbol;
-
-                toWrite += $"> {loadingChar} {percentage}% ({Current}/{Max})";
-
-                Console.Clear();
-                Console.WriteLine(toWrite);
-            }
-        }
-
 
         #region load
 

@@ -17,6 +17,7 @@ namespace GAFBot.Osu
         Red,
         Blue
     }
+
     public enum JsonFormat
     {
         MultiMatch,
@@ -70,5 +71,10 @@ namespace GAFBot.Osu
         taiko,
         catchthebeat,
         osumania
+    }
+
+    public enum CountryCode
+    {
+
     }
 }

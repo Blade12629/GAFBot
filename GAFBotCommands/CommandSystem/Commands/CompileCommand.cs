@@ -1,5 +1,7 @@
-﻿using GAFBot.MessageSystem;
+﻿using GAFBot.Database;
+using GAFBot.MessageSystem;
 using System;
+using System.Linq;
 
 namespace GAFBot.Commands
 {
@@ -10,9 +12,23 @@ namespace GAFBot.Commands
         public string CMD { get => "compile"; }
         public AccessLevel AccessLevel => AccessLevel.Admin;
 
-        public string Description => "Compiles and runs c# code at runtime";
+        public string Description
+        {
+            get
+            {
+                using (GAFContext context = new GAFContext())
+                    return context.BotLocalization.First(l => l.Code.Equals("cmdDescriptionCompile")).String;
+            }
+        }
 
-        public string DescriptionUsage => "!compile c# code";
+        public string DescriptionUsage
+        {
+            get
+            {
+                using (GAFContext context = new GAFContext())
+                    return context.BotLocalization.First(l => l.Code.Equals("cmdUsageCompile")).String;
+            }
+        }
 
         public static void Init()
         {

@@ -53,15 +53,16 @@ namespace GAFBot.Commands
             BotUsers user;
 
             using (Database.GAFContext context = new Database.GAFContext())
-                    user = context.BotUsers.First(u => (ulong)u.DiscordId == userid);
+                user = context.BotUsers.FirstOrDefault(u => (ulong)u.DiscordId == userid);
+
+            var duser = Coding.Discord.GetUser(userid);
 
             if (user == null)
             {
-                Coding.Discord.SendMessage(e.ChannelID, "Could not get user");
+                string response = $"```{Environment.NewLine}User not registered in database{Environment.NewLine}User: {duser.Username} ({duser.Id}){Environment.NewLine}Access: {AccessLevel.User.ToString()}{Environment.NewLine}Points: 0{Environment.NewLine}Registered: {DateTime.MinValue}{Environment.NewLine}Osu: null{Environment.NewLine}Verified: false{Environment.NewLine}```";
+                Coding.Discord.SendMessage(e.ChannelID, response);
                 return;
             }
-
-            var duser = Coding.Discord.GetUser(userid);
 
             string responseStr = $"```{Environment.NewLine}User: {duser.Username} ({user.DiscordId}){Environment.NewLine}Access: {user.AccessLevel}{Environment.NewLine}Points:{user.Points}{Environment.NewLine}Registered:{user.RegisteredOn}{Environment.NewLine}Osu:{user.OsuUsername ?? "null"}{Environment.NewLine}Verified:{user.IsVerified}{Environment.NewLine}```";
             Coding.Discord.SendMessage(e.ChannelID, responseStr);

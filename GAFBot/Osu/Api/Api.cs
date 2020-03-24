@@ -64,13 +64,24 @@ namespace GAFBot.Osu.Api
 
             return WriteJson(jsonInput, new Json_Get_Match()) as Json_Get_Match;
         }
-
-        // Parameters: k* api key, u* userid/username, m mode (0 = osu!, 1 = Taiko, 2 = CtB, 3 = osu!mania) (default: 0), type* UseName/UseID (string, id) (preferred: UseID) , event_days (1-31)
+        
         /// <summary>
         /// Gets a user from the api
         /// </summary>
-        public static Json_Get_User GetUser(int user, int mode = 0, string type = "id", int event_days = 1)
+        /// <param name="user">string username for <paramref name="type"/> "name" || int userid for <paramref name="type"/> "id"  </param>
+        /// <param name="mode">0 = osu!, 1 = Taiko, 2 = CtB, 3 = osu!mania</param>
+        /// <param name="type">name == string || id == int</param>
+        /// <param name="event_days">1 - 31</param>
+        /// <returns>user json</returns>
+        public static Json_Get_User GetUser(object user, int mode = 0, string type = "id", int event_days = 1)
         {
+            if (type.Equals("id") && !(user is int))
+                throw new ArgumentException("string type is 'id'" + Environment.NewLine +
+                                            " - object user should be int but is instead: " + nameof(user));
+            else if (type.Equals("name") && !(user is string))
+                throw new ArgumentException("string type is 'name'" + Environment.NewLine +
+                                            " - object user should be string but is instead: " + nameof(user));
+
             string jsonInput = "";
 
             using (WebClient webClient = new WebClient())

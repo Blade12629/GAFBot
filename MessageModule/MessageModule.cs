@@ -399,6 +399,9 @@ namespace MessageModule
 
             if (!string.IsNullOrEmpty(Program.Config.WelcomeMessage) && Program.Config.WelcomeChannel != 0)
                 WelcomeMessage((ulong)Program.Config.WelcomeChannel, Program.Config.WelcomeMessage, args.Member.Mention);
+
+            DiscordUser user = Coding.Discord.GetUser(args.Member.Id);
+            Register(user, args.Guild.Id);
         }
 
         /// <summary>

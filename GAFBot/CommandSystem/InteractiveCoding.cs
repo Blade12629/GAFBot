@@ -220,7 +220,7 @@ namespace GAFBot
                 };
 
                     CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, syntaxTrees: new[] { syntaxTree }, 
-                                                                            references: references, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                                                                             references: references, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
                     Assembly ass = null;
 

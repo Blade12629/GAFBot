@@ -8,6 +8,11 @@ using System.Text;
 
 namespace GAFBot
 {
+    public enum ABC
+    {
+
+    }
+
     public static class Extensions
     {
         public static void Log(this Exception ex, [CallerMemberName] string caller = "")

@@ -169,7 +169,7 @@ namespace VerificationModule
                     Logger.Log($"IRC: {nickName} - Verification id cannot be empty", LogLevel.Trace);
 
                     using (GAFContext context = new GAFContext())
-                        ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyIDEmpty")).Code);
+                        ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyIDEmpty")).String);
 
                     return;
                 }
@@ -184,7 +184,7 @@ namespace VerificationModule
                     Logger.Log($"IRC: {nickName} - Verification id cannot be empty", LogLevel.Trace);
 
                     using (GAFContext context = new GAFContext())
-                        ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyIDEmpty")).Code);
+                        ircMsg(context.BotLocalization.First(l => l.Code.Equals("verifyIDEmpty")).String);
 
                     return;
                 }
@@ -199,7 +199,7 @@ namespace VerificationModule
                     Logger.Log($"IRC: {nickName} - Could not find your verification id |{bver.DiscordUserId}|{verifyStr}|", LogLevel.Trace);
 
                     using (GAFContext context = new GAFContext())
-                        ircMsg($"{context.BotLocalization.First(l => l.Code.Equals("verifyIDNotFound")).Code}|{verifyStr}|");
+                        ircMsg($"{context.BotLocalization.First(l => l.Code.Equals("verifyIDNotFound")).String}|{verifyStr}|");
                     
                     return;
                 }
@@ -441,6 +441,8 @@ namespace VerificationModule
 
                 return;
             }
+
+            var userJson = GAFBot.Osu.Api.Api.GetUser(osuUser, type: "name");
 
             using (GAFContext context = new GAFContext())
             {
