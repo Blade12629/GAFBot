@@ -48,17 +48,21 @@ namespace GAFBot.Commands
                 string download = null;
 
                 int urlStart = e.AfterCMD.IndexOf("-url:");
-                string urlString = e.AfterCMD.Remove(0, urlStart + 5);
-
-                if (!string.IsNullOrEmpty(urlString))
+                string urlString = null;
+                if (urlStart > 0)
                 {
-                    using (WebClient wc = new WebClient())
-                        download = wc.DownloadString(urlString);
+                    urlString = e.AfterCMD.Remove(0, urlStart + 5);
+                    if (!string.IsNullOrEmpty(urlString))
+                    {
+                        using (WebClient wc = new WebClient())
+                            download = wc.DownloadString(urlString);
+                    }
                 }
+
                 
                 string @params = e.AfterCMD;
 
-                if (download != null)
+                if (urlString != null && download != null)
                     @params = @params.Replace("-url:" + urlString, download);
 
                 int index = @params.IndexOf(' ');

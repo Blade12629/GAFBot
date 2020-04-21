@@ -27,13 +27,22 @@ namespace GAFStreamTool.Data
         {
         }
 
-        public void Read()
+        public bool Read()
         {
+            if (!File.Exists("api.key"))
+                return false;
+
             string[] lines = File.ReadAllLines("api.key");
+
+            if (lines.Length < 1)
+                return false;
+
             Key = lines[0];
 
             if (lines.Length > 1)
                 RegisterCode = lines[1];
+
+            return true;
         }
     }
 }

@@ -22,6 +22,7 @@ namespace GAFStreamTool.Data
                 return _picks;
             }
         }
+        public static bool PicksAutoUpdateEnabled { get; private set; }
 
         public static void AddPick(Pick p)
         {
@@ -57,6 +58,11 @@ namespace GAFStreamTool.Data
 
         public static void StartAutoPickUpdate()
         {
+            if (PicksAutoUpdateEnabled)
+                StopAutoPickUpdate();
+
+            PicksAutoUpdateEnabled = true;
+
             _pickUpdateTimer = new Timer()
             {
                 Interval = 5000,
@@ -68,7 +74,7 @@ namespace GAFStreamTool.Data
 
         public static void StopAutoPickUpdate()
         {
-            if (_pickUpdateTimer == null || !_pickUpdateTimer.Enabled)
+            if (!PicksAutoUpdateEnabled)
                 return;
 
             _pickUpdateTimer.Stop();

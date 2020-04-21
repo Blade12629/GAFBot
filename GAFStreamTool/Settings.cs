@@ -18,6 +18,7 @@ namespace GAFStreamTool
         public event EventHandler<ColorEventArgs> OnBackgroundColorChange;
         public event EventHandler<ColorEventArgs> OnTextColorChange;
         public event EventHandler<string> OnApiKeyChange;
+        public bool Closed;
         private Task _connectionTask;
         
         public static string ApiKey { get; private set; }
@@ -59,6 +60,8 @@ namespace GAFStreamTool
             g = RegistryEditor.GetInt("ColorBackgroundG");
             b = RegistryEditor.GetInt("ColorBackgroundB");
 
+            SetBackgroundColor(r, g, b);
+
             if (InvokeRequired)
             {
                 Invoke(new Action(() =>
@@ -90,17 +93,19 @@ namespace GAFStreamTool
             RegistryEditor.Set("ColorBackgroundR", r);
             RegistryEditor.Set("ColorBackgroundG", g);
             RegistryEditor.Set("ColorBackgroundB", b);
+            return;
             PB_BackgroundPreview.BackColor = Color.FromArgb(r, g, b);
+            Action setBackColor = new Action(() =>
+            {
+                Color c = Color.FromArgb(r, g, b);
+                Program.MainForm.BackColor = c;
+                //Program.MainForm.TransparencyKey = c;
+            });
 
             if (Program.MainForm.InvokeRequired)
-            {
-                Program.MainForm.Invoke(new Action(() =>
-                {
-                    Program.MainForm.BackColor = Color.FromArgb(r, g, b);
-                }));
-            }
+                Program.MainForm.Invoke(setBackColor);
             else
-                Program.MainForm.BackColor = Color.FromArgb(r, g, b);
+                setBackColor();
         }
 
         public void SetTextColor(int r, int g, int b)
@@ -112,40 +117,21 @@ namespace GAFStreamTool
             RegistryEditor.Set("ColorTextB", b);
             PB_TextPreview.BackColor = Color.FromArgb(r, g, b);
 
-            if (Program.MainForm.InvokeRequired)
-            {
-                Program.MainForm.Invoke(new Action(() =>
-                {
-                    Color c = Color.FromArgb(r, g, b);
-
-                    foreach(var pc in Program.MainForm.PickComponents)
-                    {
-                        pc.LPickedByInfo.ForeColor = c;
-                        pc.TBPickedBy.ForeColor = c;
-                        pc.TBTeam.ForeColor = c;
-                    }
-                }));
-            }
-            else
-            {
-                Color c = Color.FromArgb(r, g, b);
-
-                foreach (var pc in Program.MainForm.PickComponents)
-                {
-                    pc.LPickedByInfo.ForeColor = c;
-                    pc.TBPickedBy.ForeColor = c;
-                    pc.TBTeam.ForeColor = c;
-                }
-            }
+            foreach (var pc in Program.MainForm.PickComponents)
+                pc.UpdateTextColor(r, g, b);
         }
 
         private void B_SetBackgroundColor_Click(object sender, EventArgs e)
         {
+            return;
             int r = (int)NUM_BackgroundR.Value;
             int g = (int)NUM_BackgroundG.Value;
             int b = (int)NUM_BackgroundB.Value;
 
             SetBackgroundColor(r, g, b);
+
+            foreach (var pc in Program.MainForm.PickComponents)
+                pc.UpdateTextBackColor(r, g, b);
         }
 
         private void B_SetTextColor_Click(object sender, EventArgs e)
@@ -160,6 +146,20 @@ namespace GAFStreamTool
         private void B_TrackMatch_Click(object sender, EventArgs e)
         {
             Pick.StopAutoPickUpdate();
+
+            if (string.IsNullOrEmpty(TB_TrackMatch.Text))
+            {
+                MessageBox.Show("You did not enter any match to track");
+                return;
+            }
+            else if (Program.Client == null || 
+                Program.Client.CurrentState == Network.Client.State.Disconnected ||
+                Program.Client.CurrentState == Network.Client.State.Failed)
+            {
+                MessageBox.Show("You have to connect first in order to track matches");
+                return;
+            }
+
             Program.MatchToTrack = TB_TrackMatch.Text;
             Pick.Picks.Clear();
 
@@ -170,6 +170,14 @@ namespace GAFStreamTool
 
         private void B_RefreshPicks_Click(object sender, EventArgs e)
         {
+            if (Program.Client == null ||
+                   Program.Client.CurrentState == Network.Client.State.Disconnected ||
+                   Program.Client.CurrentState == Network.Client.State.Failed)
+            {
+                MessageBox.Show("You have to connect first in order to track matches");
+                return;
+            }
+
             Packets.MatchPicksPacket matches = new Packets.MatchPicksPacket(Program.MatchToTrack);
             PacketWriter writer = new PacketWriter(matches);
             matches.Send(writer, Program.Client);
@@ -177,6 +185,15 @@ namespace GAFStreamTool
         
         private void B_Connect_Click(object sender, EventArgs e)
         {
+            if (Program.Client != null && 
+                Program.Client.CurrentState != Network.Client.State.Failed &&
+                Program.Client.CurrentState != Network.Client.State.Disconnected &&
+                Program.Client.CurrentState != Network.Client.State.Disconnecting)
+            {
+                MessageBox.Show("You are already connected, disconnect first");
+                return;
+            }
+
             _connectionTask = Task.Run(() =>
             {
                 if (Program.Client != null &&
@@ -231,6 +248,19 @@ namespace GAFStreamTool
 
         private void B_TestPing_Click(object sender, EventArgs e)
         {
+            if (Program.Client == null ||
+                   Program.Client.CurrentState == Network.Client.State.Disconnected ||
+                   Program.Client.CurrentState == Network.Client.State.Failed)
+            {
+                MessageBox.Show("You have to connect first in order to ping the server");
+                return;
+            }
+            else if (!Program.Client.Authenticated)
+            {
+                MessageBox.Show("You have to authenticate before you can ping the server");
+                return;
+            }
+
             Packets.PingPacket ping = new Packets.PingPacket(false, new Action<string>(s =>
             {
                 MessageBox.Show("Recieved response for test ping: " + s);
@@ -323,6 +353,44 @@ namespace GAFStreamTool
         private void NUM_BackgroundB_ValueChanged(object sender, EventArgs e)
         {
             SetPreviewColorBackground();
+        }
+
+        private void B_Disconnect_Click(object sender, EventArgs e)
+        {
+            if (Program.Client == null || 
+               (Program.Client != null && 
+                Program.Client.CurrentState != Network.Client.State.Failed &&
+                Program.Client.CurrentState != Network.Client.State.Disconnected &&
+                Program.Client.CurrentState != Network.Client.State.Disconnecting))
+            {
+                MessageBox.Show("You are not connected");
+                return;
+            }
+
+            Pick.StopAutoPickUpdate();
+            Program.Client.Dispose();
+            Program.Client = null;
+
+            PB_ConnectionState.BackColor = Color.Red;
+        }
+
+        private void B_StopTracking_Click(object sender, EventArgs e)
+        {
+            if (!Pick.PicksAutoUpdateEnabled)
+            {
+                MessageBox.Show("You are not tracking anything currently");
+                return;
+            }
+
+            Pick.StopAutoPickUpdate();
+        }
+
+        private void Settings_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Closed = true;
+
+            if (!Program.MainForm.Closed)
+                Program.MainForm.Close();
         }
     }
 }

@@ -1,5 +1,8 @@
-﻿using System;
+﻿using GAFStreamTool.Data;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,58 +12,209 @@ namespace GAFStreamTool
 {
     public class PickComponent : IEquatable<PickComponent>
     {
-        public TextBox TBTeam;
-        public TextBox TBPickedBy;
-        public Label LPickedByInfo;
-        public PictureBox PBImage;
-        public string PBImagePath;
-        public int Id;
+        private TextBox _tbTeam;
+        private TextBox _tbPickedBy;
+        private TextBox _tbPickedByDesc;
+        private PictureBox _pbImage;
+        private string _pbImagePath;
 
-        public bool Visible
+        public int Slot { get; private set; }
+        public Pick CurrentPick { get; private set; }
+        public bool Visible { get; private set; }
+
+        public PickComponent(int slot, TextBox tBTeam, TextBox tBPickedBy, TextBox tbPickedByDesc, PictureBox pBImage, string pbImagePath)
         {
-            get
+            _tbTeam = tBTeam;
+            _tbPickedBy = tBPickedBy;
+            _tbPickedByDesc = tbPickedByDesc;
+            _pbImage = pBImage;
+            _pbImagePath = pbImagePath;
+        }
+
+        public void Show()
+        {
+            SetVisibility(true);
+        }
+
+        public void Hide()
+        {
+            SetVisibility(false);
+        }
+        
+        private void SetVisibility(bool visible)
+        {
+            Form form = _tbTeam.FindForm();
+            Action visAction = new Action(() =>
             {
-                return TBTeam.Visible || TBPickedBy.Visible || LPickedByInfo.Visible || PBImage.Visible;
-            }
-        }
+                _tbTeam.Visible = visible;
+                _tbPickedBy.Visible = visible;
+                _tbPickedByDesc.Visible = visible;
+                _pbImage.Visible = visible;
 
-        public PickComponent(TextBox tBTeam, TextBox tBPickedBy, Label lPickedByInfo, PictureBox pBImage, string pbImagePath)
-        {
-            TBTeam = tBTeam;
-            TBPickedBy = tBPickedBy;
-            LPickedByInfo = lPickedByInfo;
-            PBImage = pBImage;
-            PBImagePath = pbImagePath;
-        }
+                if (visible)
+                    Visible = true;
+                else
+                    Visible = false;
+            });
 
-        public void Show(Form form = null)
-        {
-            SetVisibilityState(true, form);
-        }
-
-        public void Hide(Form form = null)
-        {
-            SetVisibilityState(false, form);
-        }
-
-        private void SetVisibilityState(bool state, Form form = null)
-        {
             if (form != null && form.InvokeRequired)
             {
-                form.Invoke(new Action(() =>
-                {
-                    TBTeam.Visible = state;
-                    TBPickedBy.Visible = state;
-                    LPickedByInfo.Visible = state;
-                    PBImage.Visible = state;
-                }));
+                form.Invoke(visAction);
                 return;
             }
 
-            TBTeam.Visible = state;
-            TBPickedBy.Visible = state;
-            LPickedByInfo.Visible = state;
-            PBImage.Visible = state;
+            visAction();
+        }
+
+        /// <summary>
+        /// Updates the current pick
+        /// </summary>
+        /// <param name="pick">Pick used to update, leave null to reset</param>
+        public void Update(Pick pick)
+        {
+            try
+            {
+                if (pick == null)
+                {
+                    CurrentPick = null;
+                    _tbTeam.Text = "";
+                    _tbPickedBy.Text = "";
+                    _pbImagePath = "";
+                    _pbImage.Image = null;
+
+                    Hide();
+                    return;
+                }
+
+                CurrentPick = pick;
+                _tbTeam.Text = pick.Team;
+                _tbPickedBy.Text = pick.PickedBy;
+                _pbImage.Image = GetImage(pick.Image);
+                _pbImagePath = pick.Image;
+
+                Show();
+            }
+            catch (Exception ex)
+            {
+                Program.Client.Dispose();
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
+        public void UpdateTextBackColor(int r, int g, int b)
+        {
+            return;
+            Form f = _pbImage.FindForm();
+            Action setTextBackColor = new Action(() =>
+            {
+                Color c = Color.FromArgb(r, g, b);
+
+                _tbPickedByDesc.BackColor = c;
+                _tbPickedBy.BackColor = c;
+                _tbTeam.BackColor = c;
+            });
+
+            if (f.InvokeRequired)
+            {
+                f.Invoke(setTextBackColor);
+                return;
+            }
+
+            setTextBackColor();
+        }
+
+        public void UpdateTextColor(int r, int g, int b)
+        {
+            Form f = _pbImage.FindForm();
+            Action setTextColor = new Action(() =>
+            {
+                Color c = Color.FromArgb(r, g, b);
+
+                _tbPickedByDesc.ForeColor = c;
+                _tbPickedBy.ForeColor = c;
+                _tbTeam.ForeColor = c;
+            });
+            
+            if (f.InvokeRequired)
+            {
+                f.Invoke(setTextColor);
+                return;
+            }
+
+            setTextColor();
+        }
+
+        private Image GetImage(string url)
+        {
+            string path = System.IO.Path.Combine("cachedImage\\", FixFilePath(_tbTeam.Text) + ".img");
+
+            if (File.Exists(path))
+                return LoadImage(path);
+
+            using (System.Net.WebClient wc = new System.Net.WebClient())
+                wc.DownloadFile(url, path);
+
+            return LoadImage(path);
+        }
+
+        private Image LoadImage(string path)
+        {
+            using (FileStream fstream = File.OpenRead(path))
+            {
+                using (MemoryStream mstream = new MemoryStream())
+                {
+                    fstream.Position = 0;
+                    fstream.CopyTo(mstream);
+
+                    return Image.FromStream(mstream);
+                }
+            }
+        }
+
+        private char[] _forbiddenFileChars = new char[]
+        {
+            '\\',
+            '/',
+            ':',
+            '*',
+            '?',
+            '"',
+            '<',
+            '>',
+            '|'
+        };
+
+        private string FixFilePath(string path)
+        {
+            string result = "";
+
+            for (int i = 0; i < path.Length; i++)
+            {
+                if (_forbiddenFileChars.Contains(path[i]))
+                    result += "-";
+                else
+                    result += path[i];
+            }
+
+            return result;
+        }
+
+        public bool IsPickedBy(Pick pick)
+        {
+            return IsPickedBy(pick.PickedBy);
+        }
+
+        public bool IsPickedBy(string pickedBy, StringComparison comparison = StringComparison.CurrentCultureIgnoreCase)
+        {
+            if (string.IsNullOrEmpty(_tbPickedBy.Text) || !_tbPickedBy.Text.Equals(pickedBy, comparison))
+                return false;
+
+            return true;
+        }
+
+        public bool IsPicked()
+        {
+            return !string.IsNullOrEmpty(_tbPickedBy.Text);
         }
 
         public override bool Equals(object obj)
@@ -71,28 +225,15 @@ namespace GAFStreamTool
         public bool Equals(PickComponent other)
         {
             return other != null &&
-                   EqualityComparer<string>.Default.Equals(TBTeam.Text, other.TBTeam.Text) &&
-                   EqualityComparer<string>.Default.Equals(TBPickedBy.Text, other.TBPickedBy.Text);
+                   EqualityComparer<string>.Default.Equals(_tbTeam.Text, other._tbTeam.Text) &&
+                   EqualityComparer<string>.Default.Equals(_tbPickedBy.Text, other._tbPickedBy.Text);
         }
-
-        public bool Equals(Data.Pick pick)
-        {
-            return pick != null &&
-                   pick.Team.Equals(TBTeam.Text, StringComparison.CurrentCultureIgnoreCase) &&
-                   pick.Team.Equals(TBPickedBy.Text, StringComparison.CurrentCultureIgnoreCase);
-        }
-
-        public bool IsPickedBy(Data.Pick pick)
-        {
-            return pick != null &&
-                   pick.PickedBy.Equals(TBPickedBy.Text, StringComparison.CurrentCultureIgnoreCase);
-        }
-
+        
         public override int GetHashCode()
         {
             var hashCode = -1056656390;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(TBTeam.Text);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(TBPickedBy.Text);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(_tbTeam.Text);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(_tbPickedBy.Text);
             return hashCode;
         }
 

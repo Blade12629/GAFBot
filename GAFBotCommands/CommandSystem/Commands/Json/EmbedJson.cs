@@ -43,7 +43,7 @@ namespace GAFBot.Commands.Json
             if (embed.Footer != null)
                 footer = new Footer()
                 {
-                    icon_url = embed.Footer.IconUrl.ToString(),
+                    icon_url = embed.Footer.IconUrl?.ToString() ?? null,
                     text = embed.Footer.Text
                 };
 

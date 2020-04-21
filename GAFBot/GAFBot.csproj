@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <None Remove="OsuHistoryEndPoint.dll" />
+    <None Remove="RenameModules.bat" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,6 +61,12 @@
     <Reference Include="OsuHistoryEndPoint">
       <HintPath>bin\Release\netcoreapp2.2\OsuHistoryEndPoint.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="RenameModules.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

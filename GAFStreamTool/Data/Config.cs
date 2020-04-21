@@ -38,6 +38,9 @@ namespace GAFStreamTool.Data
                 return false;
 
             string[] lines = File.ReadAllLines("config.cfg");
+
+            if (lines.Length < 4)
+                return false;
         
             Host = lines[0].Trim(' ');
             Port = lines[1].Trim(' ');

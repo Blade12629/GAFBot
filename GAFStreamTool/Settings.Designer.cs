@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Settings));
             this.label1 = new System.Windows.Forms.Label();
             this.NUM_TextR = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
@@ -55,6 +56,9 @@
             this.B_Connect = new System.Windows.Forms.Button();
             this.PB_ConnectionState = new System.Windows.Forms.PictureBox();
             this.B_TestPing = new System.Windows.Forms.Button();
+            this.B_Disconnect = new System.Windows.Forms.Button();
+            this.B_StopTracking = new System.Windows.Forms.Button();
+            this.label12 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextR)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextG)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextB)).BeginInit();
@@ -400,7 +404,7 @@
             // 
             this.B_Connect.Location = new System.Drawing.Point(202, 206);
             this.B_Connect.Name = "B_Connect";
-            this.B_Connect.Size = new System.Drawing.Size(63, 23);
+            this.B_Connect.Size = new System.Drawing.Size(70, 23);
             this.B_Connect.TabIndex = 28;
             this.B_Connect.Text = "Connect";
             this.B_Connect.UseVisualStyleBackColor = true;
@@ -409,7 +413,7 @@
             // PB_ConnectionState
             // 
             this.PB_ConnectionState.BackColor = System.Drawing.Color.Red;
-            this.PB_ConnectionState.Location = new System.Drawing.Point(271, 203);
+            this.PB_ConnectionState.Location = new System.Drawing.Point(278, 205);
             this.PB_ConnectionState.Name = "PB_ConnectionState";
             this.PB_ConnectionState.Size = new System.Drawing.Size(34, 26);
             this.PB_ConnectionState.TabIndex = 29;
@@ -417,13 +421,44 @@
             // 
             // B_TestPing
             // 
-            this.B_TestPing.Location = new System.Drawing.Point(202, 180);
+            this.B_TestPing.Location = new System.Drawing.Point(202, 149);
             this.B_TestPing.Name = "B_TestPing";
-            this.B_TestPing.Size = new System.Drawing.Size(63, 23);
+            this.B_TestPing.Size = new System.Drawing.Size(70, 23);
             this.B_TestPing.TabIndex = 30;
             this.B_TestPing.Text = "Test Ping";
             this.B_TestPing.UseVisualStyleBackColor = true;
             this.B_TestPing.Click += new System.EventHandler(this.B_TestPing_Click);
+            // 
+            // B_Disconnect
+            // 
+            this.B_Disconnect.Location = new System.Drawing.Point(202, 178);
+            this.B_Disconnect.Name = "B_Disconnect";
+            this.B_Disconnect.Size = new System.Drawing.Size(70, 23);
+            this.B_Disconnect.TabIndex = 31;
+            this.B_Disconnect.Text = "Disconnect";
+            this.B_Disconnect.UseVisualStyleBackColor = true;
+            this.B_Disconnect.Click += new System.EventHandler(this.B_Disconnect_Click);
+            // 
+            // B_StopTracking
+            // 
+            this.B_StopTracking.Location = new System.Drawing.Point(271, 62);
+            this.B_StopTracking.Name = "B_StopTracking";
+            this.B_StopTracking.Size = new System.Drawing.Size(93, 23);
+            this.B_StopTracking.TabIndex = 32;
+            this.B_StopTracking.Text = "Stop tracking";
+            this.B_StopTracking.UseVisualStyleBackColor = true;
+            this.B_StopTracking.Click += new System.EventHandler(this.B_StopTracking_Click);
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F);
+            this.label12.Location = new System.Drawing.Point(386, 177);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(70, 52);
+            this.label12.TabIndex = 33;
+            this.label12.Text = "Created by \r\nSkyfly\r\nFor\r\nGottaAimFast";
+            this.label12.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // Settings
             // 
@@ -431,6 +466,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(468, 247);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.B_StopTracking);
+            this.Controls.Add(this.B_Disconnect);
             this.Controls.Add(this.B_TestPing);
             this.Controls.Add(this.PB_ConnectionState);
             this.Controls.Add(this.B_Connect);
@@ -459,8 +497,10 @@
             this.Controls.Add(this.NUM_TextR);
             this.Controls.Add(this.label1);
             this.ForeColor = System.Drawing.Color.Aqua;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Settings";
-            this.Text = "Settings";
+            this.Text = "GAFStreamTool Settings";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Settings_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextR)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextG)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_TextB)).EndInit();
@@ -504,5 +544,8 @@
         private System.Windows.Forms.Button B_Connect;
         private System.Windows.Forms.PictureBox PB_ConnectionState;
         private System.Windows.Forms.Button B_TestPing;
+        private System.Windows.Forms.Button B_Disconnect;
+        private System.Windows.Forms.Button B_StopTracking;
+        private System.Windows.Forms.Label label12;
     }
 }

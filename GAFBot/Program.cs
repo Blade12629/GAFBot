@@ -112,7 +112,6 @@ namespace GAFBot
                 }
 
                 Logger.Initialize();
-
                 SaveEvent += () => Logger.Log("Starting Save process");
                 ExitEvent += () =>
                 {
@@ -147,6 +146,7 @@ namespace GAFBot
 #else
                 Logger.Log("Running on Release mode");
 #endif
+
 
                 //Loads the AutoInitAttribute
                 InitializeAssembly(Assembly.GetEntryAssembly());

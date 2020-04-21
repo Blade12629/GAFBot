@@ -310,7 +310,6 @@ namespace MessageModule
 
         public void OnMemberRemoved(GuildMemberRemoveEventArgs args)
         {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -354,10 +353,32 @@ namespace MessageModule
                 string message = messageArgs.Message.Content;
 
                 if (messageArgs.Channel.Id == (ulong)Program.Config.AnalyzeChannel)
-                    StartAnalyzer(messageArgs);
+                {
+                    //check if we are in qualifier stage or not
+                    string[] lineSplit = messageArgs.Message.Content.Split(new char[] { '\r', '\n' });
+                    lineSplit[0] = lineSplit[0].Replace("dq!", "");
+
+                    string[] wSplit;
+                    foreach (string line in lineSplit)
+                    {
+                        if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            wSplit = line.Split('-');
+                            string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
+
+                            if (stage.Equals("qualifier", StringComparison.CurrentCultureIgnoreCase))
+                                StartQualifierAnalyzer(messageArgs);
+                            else
+                                StartAnalyzer(messageArgs);
+
+                            break;
+                        }
+                    }
+
+                    return;
+                }
 
                 BotUsers buser;
-
                 using (GAFContext context = new GAFContext())
                     buser = context.BotUsers.FirstOrDefault(b => (ulong)b.DiscordId.Value == messageArgs.Author.Id);
 
@@ -365,12 +386,6 @@ namespace MessageModule
                 if (buser.DiscordId == 154605183714852864 && messageArgs.Message.Content.StartsWith("hiss~"))
                 {
                     Coding.Discord.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
-                    return;
-                }
-
-                if ((AccessLevel)buser.AccessLevel >= AccessLevel.Admin && messageArgs.Message.Content.StartsWith("d!", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    StartAnalyzer(messageArgs, false);
                     return;
                 }
 
@@ -479,10 +494,131 @@ namespace MessageModule
             Logger.Log("MessageHandler: User registered", LogLevel.Trace);
         }
 
+        public void StartQualifierAnalyzer(MessageCreateEventArgs args, bool sendToDatabase = true)
+        {
+            StartQualifierAnalyzer(args.Message.Content, args.Channel.Id, sendToDatabase);
+        }
+
+        /// <summary>
+        /// starts the osu mp qualifier analyzer
+        /// </summary>
+        public void StartQualifierAnalyzer(string message, ulong channel, bool sendToDatabase = true)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    Logger.Log("Starting qualifier analyzer", LogLevel.Trace);
+
+                    //<https://osu.ppy.sh/community/matches/53616778> 
+                    //<https://osu.ppy.sh/mp/53616778> 
+
+                    GAFBot.Osu.Analyzer analyzer = new GAFBot.Osu.Analyzer();
+                    var matchData = analyzer.ParseMatch(message);
+
+                    AnalyzerQualifierResult result = analyzer.CreateQualifierStatistics(matchData.Item1, matchData.Item2);
+
+                    string[] lineSplit = message.Split(new char[] { '\r', '\n' });
+                    lineSplit[0] = lineSplit[0].Replace("dq!", "");
+
+                    string[] wSplit;
+                    foreach (string line in lineSplit)
+                    {
+                        if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            wSplit = line.Split('-');
+                            string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
+                            result.Stage = stage;
+
+                            break;
+                        }
+                    }
+
+                    DiscordColor statsColor = _analyzerColors[Program.Rnd.Next(0, _analyzerColors.Count - 1)];
+                    DiscordEmbed statsEmbed = analyzer.CreateQualifierStatisticEmbed(result, statsColor);
+
+                    Logger.Log("Finished analyzing qualifier stats, sending result...", LogLevel.Trace);
+
+                    Coding.Discord.GetChannel(channel).SendMessageAsync(embed: statsEmbed).Wait();
+
+                    if (sendToDatabase)
+                    {
+                        using (GAFContext context = new GAFContext())
+                        {
+                            var resultEntry = context.BotAnalyzerQualifierResult.Add(new BotAnalyzerQualifierResult()
+                            {
+                                MatchId = result.MatchId,
+                                MatchName = result.MatchName,
+                                Stage = result.Stage
+                            });
+
+                            context.SaveChanges();
+
+                            foreach (var team in result.Teams)
+                            {
+                                BotAnalyzerQualifierTeam dbteam = context.BotAnalyzerQualifierTeam.FirstOrDefault(t => t.TeamName.Equals(team.TeamName, StringComparison.CurrentCultureIgnoreCase));
+
+                                if (dbteam == null)
+                                {
+                                    var teamEntry = context.BotAnalyzerQualifierTeam.Add(new BotAnalyzerQualifierTeam()
+                                    {
+                                        QualifierResultId = resultEntry.Entity.Id,
+                                        TeamName = team.TeamName
+                                    });
+
+                                    context.SaveChanges();
+                                    dbteam = teamEntry.Entity;
+                                }
+
+                                foreach (var player in team.Players)
+                                {
+                                    BotAnalyzerQualifierPlayer dbplayer = context.BotAnalyzerQualifierPlayer.FirstOrDefault(p => p.UserId == player.UserId);
+
+                                    if (dbplayer == null)
+                                    {
+                                        var playerEntry = context.BotAnalyzerQualifierPlayer.Add(new BotAnalyzerQualifierPlayer()
+                                        {
+                                            QualifierTeamId = dbteam.Id,
+                                            UserId = player.UserId,
+                                            UserName = player.UserName
+                                        });
+
+                                        context.SaveChanges();
+                                        dbplayer = playerEntry.Entity;
+                                    }
+
+                                    foreach (var scorepair in player.Scores)
+                                    {
+                                        var dbscore = ConvertScore(scorepair.Item2, result.MatchId);
+                                        dbscore.BeatmapId = scorepair.Item1;
+
+                                        context.BotAnalyzerScore.Add(dbscore);
+                                    }
+                                }
+                            }
+
+                            context.SaveChanges();
+
+                            Logger.Log("Saved qualifier result to db", LogLevel.Trace);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log(ex.ToString(), LogLevel.ERROR);
+                }
+            });
+        }
+
+        public void StartAnalyzer(MessageCreateEventArgs args, bool sendToApi = false, bool sendToDatabase = true)
+        {
+            StartAnalyzer(args.Message.Content, args.Channel.Id, sendToApi, sendToDatabase);
+        }
+
         /// <summary>
         /// starts the osu mp analyzer
         /// </summary>
-        public void StartAnalyzer(MessageCreateEventArgs args, bool sendToApi = true, bool sendToDatabase = true)
+        public void StartAnalyzer(string message, ulong channel, bool sendToApi = false, bool sendToDatabase = true)
         {
             Task.Run(() =>
             {
@@ -491,21 +627,21 @@ namespace MessageModule
                     //<https://osu.ppy.sh/community/matches/53616778> 
                     //<https://osu.ppy.sh/mp/53616778> 
 
+                    GAFBot.Statistic.StatsHandler.UpdateSeasonStatistics(message, Program.Config.CurrentSeason);
+
+
                     GAFBot.Osu.Analyzer analyzer = new GAFBot.Osu.Analyzer();
-                    var matchData = analyzer.ParseMatch(args.Message.Content);
-
-                    AnalyzerResult analyzerResult = analyzer.CreateStatistic(matchData.Item1, matchData.Item2);
-
-                    if (analyzerResult == null)
-                    {
-                        Logger.Log("Failed to create result", LogLevel.ERROR);
-                        return;
-                    }
+                    var matchData = analyzer.ParseMatch(message);
 
                     const string BAN_PATTERN = "bans from";
 
-                    string[] lineSplit = args.Message.Content.Split(new char[] { '\r', '\n' });
+                    string[] lineSplit = message.Split(new char[] { '\r', '\n' });
                     lineSplit[0] = lineSplit[0].Replace("d!", "");
+
+                    AnalyzerResult analyzerResult = analyzer.CreateStatistic(matchData.Item1, matchData.Item2);
+
+                    var embed = GAFBot.Statistic.StatsHandler.GetMatchResultEmbed(analyzerResult.MatchId);
+                    Coding.Discord.GetChannel((ulong)Program.Config.AnalyzeChannel).SendMessageAsync(embed: embed).Wait();
 
                     List<BanInfo> bans = new List<BanInfo>();
                     string mline, bannedBy;
@@ -517,6 +653,7 @@ namespace MessageModule
                             wSplit = line.Split('-');
                             string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
                             analyzerResult.Stage = stage;
+
                             continue;
                         }
                         else if (!line.StartsWith(BAN_PATTERN, StringComparison.CurrentCultureIgnoreCase))
@@ -556,8 +693,13 @@ namespace MessageModule
                         }
                     }
 
-                    analyzerResult.Bans = bans.ToArray();
+                    if (analyzerResult == null)
+                    {
+                        Logger.Log("Failed to create result", LogLevel.ERROR);
+                        return;
+                    }
 
+                    analyzerResult.Bans = bans.ToArray();
 
                     if (sendToApi && Program.HTTPAPI != null)
                     {
@@ -576,37 +718,8 @@ namespace MessageModule
 
                     if (sendToDatabase)
                     {
-                        List<BotAnalyzerRank> branks = new List<BotAnalyzerRank>();
-
-                        int mvpId = 0;
-                        float mvpScore = 0;
-                        foreach (Rank r in analyzerResult.Ranks)
-                        {
-                            branks.Add(new BotAnalyzerRank()
-                            {
-                                MatchId = analyzerResult.MatchId,
-                                Place = r.Place,
-                                PlayerOsuId = r.Player.UserId,
-                                MvpScore = r.Player.MVPScore
-                            });
-
-                            if (mvpScore < r.Player.MVPScore)
-                            {
-                                mvpScore = r.Player.MVPScore;
-                                mvpId = r.Player.UserId;
-                            }
-                        }
-
-                        foreach (Rank r in analyzerResult.HighestScoresRanking)
-                            branks.Find(b => r.Player.UserId == b.PlayerOsuId).PlaceScore = r.Place;
-
-                        foreach (Rank r in analyzerResult.HighestAverageAccuracyRanking)
-                            branks.Find(b => r.Player.UserId == b.PlayerOsuId).PlaceAccuracy = r.Place;
-
                         using (GAFContext context = new GAFContext())
                         {
-                            context.BotAnalyzerRank.AddRange(branks);
-
                             foreach (BanInfo bi in analyzerResult.Bans)
                                 context.BotAnalyzerBanInfo.Add(new BotAnalyzerBaninfo()
                                 {
@@ -619,126 +732,49 @@ namespace MessageModule
 
                             context.SaveChanges();
                         }
-
-                        BotAnalyzerScore highAccScore = ConvertScore(analyzerResult.HighestAccuracyScore, analyzerResult.MatchId);
-                        highAccScore.BeatmapId = analyzerResult.HighestAccuracyBeatmap.id ?? -1;
-                        BotAnalyzerScore highScore = ConvertScore(analyzerResult.HighestScore, analyzerResult.MatchId);
-                        highScore.BeatmapId = analyzerResult.HighestAccuracyBeatmap.id ?? -1;
-
-                        EntityEntry<BotAnalyzerScore> highAccScoreEnt;
-                        EntityEntry<BotAnalyzerScore> highScoreEnt;
-                        using (GAFContext context = new GAFContext())
-                        {
-                            highAccScoreEnt = context.BotAnalyzerScore.Add(highAccScore);
-                            highScoreEnt = context.BotAnalyzerScore.Add(highScore);
-                            
-                            BotAnalyzerScore score;
-                            foreach (var scorePair in analyzerResult.Scores)
-                            {
-                                score = ConvertScore(scorePair.Item2, analyzerResult.MatchId);
-                                score.BeatmapId = scorePair.Item1;
-
-                                context.BotAnalyzerScore.Add(score);
-                            }
-
-                            context.SaveChanges();
-                        }
-
-                        BotAnalyzerResult br = new BotAnalyzerResult()
-                        {
-                            MatchId = analyzerResult.MatchId,
-                            Stage = analyzerResult.Stage,
-                            MatchName = analyzerResult.MatchName,
-                            WinningTeam = analyzerResult.WinningTeam,
-                            WinningTeamWins = analyzerResult.WinningTeamWins,
-                            WinningTeamColor = (int)analyzerResult.WinningTeamColor,
-                            LosingTeam = analyzerResult.LosingTeam,
-                            LosingTeamWins = analyzerResult.LosingTeamWins,
-                            TimeStamp = analyzerResult.TimeStamp,
-                            HighestScoreBeatmapId = (long)analyzerResult.HighestScoreBeatmap.id,
-                            HighestScoreOsuId = analyzerResult.HighestScoreUser.UserId,
-                            HighestAccuracyBeatmapId = (long)analyzerResult.HighestAccuracyBeatmap.id,
-                            HighestAccuracyOsuId = analyzerResult.HighestAccuracyUser.UserId,
-                            HighestAccuracyScoreId = highAccScore.Id,
-                            HighestScoreId = highScore.Id,
-                            MvpUserOsuId = mvpId,
-                        };
-
-                        using (GAFContext context = new GAFContext())
-                        {
-                            context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
-                            {
-                                Season = Program.Config.CurrentSeason,
-                                MatchId = highAccScore.Id
-                            });
-
-                            context.BotAnalyzerTourneyMatch.Add(new BotAnalyzerTourneyMatches()
-                            {
-                                Season = Program.Config.CurrentSeason,
-                                MatchId = highScore.Id
-                            });
-
-                            context.BotAnalyzerResult.Add(br);
-                            context.SaveChanges();
-                        }
                     }
-
-                    DiscordColor statsColor = _analyzerColors[Program.Rnd.Next(0, _analyzerColors.Count - 1)];
-                    DiscordEmbed statsEmbed = analyzer.CreateStatisticEmbed(analyzerResult, statsColor);
-
-                    args.Channel.SendMessageAsync(embed: statsEmbed).Wait();
-
-                    string winningTeam = analyzerResult.WinningTeam;
-                    (string, string) teamNames = analyzerResult.TeamNames;
-
-                    Logger.Log($"Executing OnMatchEnd {teamNames.Item1}, {teamNames.Item2}, {winningTeam}", LogLevel.Trace);
-                    Task.Run(() =>
-                    {
-                        GAFBot.Gambling.Betting.IBettingHandler bettingHandler = GAFBot.Modules.ModuleHandler.Get("betting") as GAFBot.Gambling.Betting.IBettingHandler;
-                        bettingHandler?.ResolveBets(teamNames.Item1, teamNames.Item2, winningTeam);
-                    });
                 }
                 catch (Exception ex)
                 {
                     Logger.Log(ex.ToString(), LogLevel.ERROR);
                 }
             });
+        }
 
-            BotAnalyzerScore ConvertScore(OsuHistoryEndPoint.HistoryJson.Score score, int matchId)
+        public BotAnalyzerScore ConvertScore(OsuHistoryEndPoint.HistoryJson.Score score, int matchId)
+        {
+            string mods = "";
+
+            if (score.mods != null && score.mods.Count > 0)
             {
-                string mods = "";
+                mods = score.mods[0];
 
-                if (score.mods != null && score.mods.Count > 0)
-                {
-                    mods = score.mods[0];
-
-                    for (int i = 1; i < score.mods.Count; i++)
-                        mods += "|" + score.mods[i];
-                }
-
-                return new BotAnalyzerScore()
-                {
-                    MatchId = matchId,
-                    UserId = score.user_id ?? 0,
-                    Accuracy = score.accuracy ?? 0,
-                    Mods = mods,
-                    Score = score.score ?? 0,
-                    MaxCombo = score.max_combo ?? 0,
-                    Perfect = score.perfect ?? 0,
-                    PP = score.pp ?? 0,
-                    Rank = score.rank ?? 0,
-                    CreatedAt = score.created_at ?? DateTime.UtcNow,
-                    Slot = score.multiplayer.slot ?? 0,
-                    Team = score.multiplayer.team,
-                    Pass = score.multiplayer.pass ?? 0,
-                    Count50 = score.statistics.count_50 ?? 0,
-                    Count100 = score.statistics.count_100 ?? 0,
-                    Count300 = score.statistics.count_300 ?? 0,
-                    CountGeki = score.statistics.count_geki ?? 0,
-                    CountKatu = score.statistics.count_katu ?? 0,
-                    CountMiss = score.statistics.count_miss ?? 0
-                };
+                for (int i = 1; i < score.mods.Count; i++)
+                    mods += "|" + score.mods[i];
             }
+
+            return new BotAnalyzerScore()
+            {
+                MatchId = matchId,
+                UserId = score.user_id ?? 0,
+                Accuracy = score.accuracy ?? 0,
+                Mods = mods,
+                Score = score.score ?? 0,
+                MaxCombo = score.max_combo ?? 0,
+                Perfect = score.perfect ?? 0,
+                PP = score.pp ?? 0,
+                Rank = score.rank ?? 0,
+                CreatedAt = score.created_at ?? DateTime.UtcNow,
+                Slot = score.multiplayer.slot ?? 0,
+                Team = score.multiplayer.team,
+                Pass = score.multiplayer.pass ?? 0,
+                Count50 = score.statistics.count_50 ?? 0,
+                Count100 = score.statistics.count_100 ?? 0,
+                Count300 = score.statistics.count_300 ?? 0,
+                CountGeki = score.statistics.count_geki ?? 0,
+                CountKatu = score.statistics.count_katu ?? 0,
+                CountMiss = score.statistics.count_miss ?? 0
+            };
         }
 
         public void WelcomeMessage(ulong channel, string welcomeMessage, string mentionString)

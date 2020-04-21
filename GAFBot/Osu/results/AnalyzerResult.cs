@@ -35,6 +35,9 @@ namespace GAFBot.Osu.results
         public HistoryJson.BeatMap HighestAccuracyBeatmap { get; set; }
         public Player HighestAccuracyUser { get; set; }
         public HistoryJson.Score HighestAccuracyScore { get; set; }
+        /// <summary>
+        /// Beatmapid, score
+        /// </summary>
         public (long, HistoryJson.Score)[] Scores { get; set; }
 
         public Player MVP { get; set; }

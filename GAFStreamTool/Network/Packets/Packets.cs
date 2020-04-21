@@ -89,8 +89,8 @@ namespace GAFStreamTool.Network.Packets
                 }
 
                 Pick.Picks.AddRange(picks);
-
-                Program.MainForm.CheckForUpdatedPics(picks.ToArray());
+                
+                Program.MainForm.UpdatePicks(picks.ToArray());
             }
 
             public void Send(PacketWriter writer, Client client, params object[] data)

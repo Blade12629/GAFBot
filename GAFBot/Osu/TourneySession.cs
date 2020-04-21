@@ -188,28 +188,11 @@ namespace GAFBot.Osu
     public class PlayerProfileDB
     {
         public float OverallRating { get; set; }
-        //{
-        //    get
-        //    {
-        //        List<(float, float)> values = new List<(float, float)>();
-
-        //        for (int i = 0; i < AverageGeneratedPerformanceScores.Length && i < AverageAccuracies.Length; i++)
-        //            values.Add((AverageAccuracies[i], AverageGeneratedPerformanceScores[i]));
-
-        //        return TourneySession.GetOverallPerformance(values: values.ToArray());
-        //    }
-        //}
         public int PlayCount { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
 
-        /// <summary>
-        /// Always Up to date with <see cref="AverageGeneratedPerformanceScores"/>
-        /// </summary>
         public float AverageGeneratedPerformanceScore { get; set; }
-        /// <summary>
-        /// Always Up to date with <see cref="AverageAccuracies"/>
-        /// </summary>
         public float AverageAccuracy { get; set; }
 
         public PlayerProfileDB()

@@ -19,19 +19,37 @@ namespace GAFStreamTool
     {
         private readonly List<PickComponent> _pickComponents;
         public IReadOnlyList<PickComponent> PickComponents => _pickComponents;
+        public bool Closed;
 
         public GAFStreamTool()
         {
             InitializeComponent();
             _pickComponents = new List<PickComponent>()
             {
-                new PickComponent(TB_Pick1PickedTeam, TB_Pick1PickedBy, L_Pick1PickedByDesc, PB_Pick1Image, "null"),
-                new PickComponent(TB_Pick2PickedTeam, TB_Pick2PickedBy, L_Pick1PickedByDesc, PB_Pick2Image, "null"),
-                new PickComponent(TB_Pick3PickedTeam, TB_Pick3PickedBy, L_Pick1PickedByDesc, PB_Pick3Image, "null"),
+                new PickComponent(1, TB_Pick1PickedTeam, TB_Pick1PickedBy, TB_Pick1Desc, PB_Pick1Image, "null"),
+                new PickComponent(2, TB_Pick2PickedTeam, TB_Pick2PickedBy, TB_Pick2Desc, PB_Pick2Image, "null"),
+                new PickComponent(3, TB_Pick3PickedTeam, TB_Pick3PickedBy, TB_Pick3Desc, PB_Pick3Image, "null"),
             };
+
 
             if (!Directory.Exists("cachedImage\\"))
                 Directory.CreateDirectory("cachedImage\\");
+
+            SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+            BackColor = Color.YellowGreen;
+            TransparencyKey = Color.YellowGreen;
+
+            TB_Pick1Desc.BackColor = Color.YellowGreen;
+            TB_Pick2Desc.BackColor = Color.YellowGreen;
+            TB_Pick3Desc.BackColor = Color.YellowGreen;
+
+            TB_Pick1PickedBy.BackColor = Color.YellowGreen;
+            TB_Pick2PickedBy.BackColor = Color.YellowGreen;
+            TB_Pick3PickedBy.BackColor = Color.YellowGreen;
+
+            TB_Pick1PickedTeam.BackColor = Color.YellowGreen;
+            TB_Pick2PickedTeam.BackColor = Color.YellowGreen;
+            TB_Pick3PickedTeam.BackColor = Color.YellowGreen;
 
             Task.Run(() =>
             {
@@ -40,19 +58,12 @@ namespace GAFStreamTool
                 
                 Program.SettingsForm.InitializeForeAndBackgroundColor();
 
-                if (InvokeRequired)
-                    Invoke(new Action(() => { L_Loading.Visible = false; }));
-                else
-                    L_Loading.Visible = false;
             });
         }
-        private IEnumerable<Component> EnumerateComponents()
+
+        protected override void OnPaintBackground(PaintEventArgs e)
         {
-            return from field in GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                   where typeof(Component).IsAssignableFrom(field.FieldType)
-                   let component = (Component)field.GetValue(this)
-                   where component != null
-                   select component;
+            e.Graphics.FillRectangle(Brushes.YellowGreen, e.ClipRectangle);
         }
 
         public Image CreateTestImage()
@@ -122,171 +133,65 @@ namespace GAFStreamTool
 
             return bmp;
         }
-
-        public void HideNotification()
-        {
-            SetNotificationVisibility(false);
-        }
-
-        public void ShowNotification()
-        {
-            SetNotificationVisibility(true);
-        }
-
-        private void SetNotificationVisibility(bool state)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => L_Loading.Visible = state));
-                return;
-            }
-
-            L_Loading.Visible = state;
-        }
-
+        
         public PickComponent GetPick(int slot)
         {
             return _pickComponents[slot - 1];
         }
-
-        /// <summary>
-        /// Sets and shows a pick or resets and hides it if all values are null
-        /// </summary>
-        /// <param name="slot">slot</param>
-        /// <param name="pickedTeam">team name</param>
-        /// <param name="pickedBy">commentator name</param>
-        /// <param name="img">team image</param>
-        public void SetPick(int slot, string pickedTeam = null, string pickedBy = null, Image img = null)
+        
+        public void UpdatePicks(params Pick[] picks)
         {
-            PickComponent comp = GetPick(slot);
-
-            if (pickedTeam == null && pickedBy == null && img == null)
-            {
-                if (InvokeRequired)
-                {
-                    Invoke(new Action(() =>
-                    {
-                        comp.TBTeam.Visible = false;
-                        comp.TBPickedBy.Visible = false;
-                        comp.PBImage.Visible = false;
-                        comp.LPickedByInfo.Visible = false;
-
-                        comp.TBTeam.Text = "";
-                        comp.TBPickedBy.Text = "";
-                        comp.PBImage.Image = null;
-                    }));
-                    return;
-                }
-
-                comp.TBTeam.Visible = false;
-                comp.TBPickedBy.Visible = false;
-                comp.PBImage.Visible = false;
-                comp.LPickedByInfo.Visible = false;
-
-                comp.TBTeam.Text = "";
-                comp.TBPickedBy.Text = "";
-                comp.PBImage.Image = null;
-            }
-
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() =>
-                {
-                    if (pickedTeam != null)
-                        comp.TBTeam.Text = pickedTeam;
-
-                    if (pickedBy != null)
-                        comp.TBPickedBy.Text = pickedBy;
-
-                    if (img != null)
-                        comp.PBImage.Image = img;
-
-                    comp.TBTeam.Visible = true;
-                    comp.TBPickedBy.Visible = true;
-                    comp.PBImage.Visible = true;
-                    comp.LPickedByInfo.Visible = true;
-                }));
-                return;
-            }
-
-            if (pickedTeam != null)
-                comp.TBTeam.Text = pickedTeam;
-
-            if (pickedBy != null)
-                comp.TBPickedBy.Text = pickedBy;
-
-            if (img != null)
-                comp.PBImage.Image = img;
-
-            comp.TBTeam.Visible = true;
-            comp.TBPickedBy.Visible = true;
-            comp.PBImage.Visible = true;
-            comp.LPickedByInfo.Visible = true;
-        }
-
-        public void CheckForUpdatedPics(params Pick[] picks)
-        {
-            int[] slotsUsed = new int[3]
-            {
-                0,
-                0,
-                0
-            };
-
-            List<Pick> notFoundPicks = new List<Pick>();
-            foreach(Pick p in picks)
-            {
-                PickComponent comp = _pickComponents.FirstOrDefault(pc => pc.IsPickedBy(p));
-
-                if (comp == null)
-                {
-                    notFoundPicks.Add(p);
-                    continue;
-                }
-
-                slotsUsed[comp.Id - 1] = 1;
-
-                if (!comp.PBImagePath.Equals(p.Image) ||
-                    !comp.TBPickedBy.Text.Equals(p.PickedBy) ||
-                    !comp.TBTeam.Text.Equals(p.Team))
-                    UpdatePick(comp.Id, p);
-            }
-
-            for (int i = 0; i < slotsUsed.Length; i++)
-            {
-                if (slotsUsed[i] == 0)
-                {
-                    if (notFoundPicks.Count > 0)
-                    {
-                        Pick p = notFoundPicks[0];
-                        UpdatePick(i + 1, p);
-                     
-                        notFoundPicks.RemoveAt(0);
-                    }
-                    else
-                        SetPick(i + 1);
-                }
-            }
+            List<PickComponent> components = _pickComponents.ToList();
+            List<Pick> newPicks = picks.ToList();
             
+            Action updateAc = new Action(() =>
+            {
+                //Update existing picks if they are still valid
+                for (int i = 0; i < components.Count; i++)
+                {
+                    if (!components[i].IsPicked())
+                        continue;
+
+                    int index = newPicks.FindIndex(p => components[i].IsPickedBy(p));
+
+                    if (index == -1)
+                        continue;
+                    
+                    components[i].Update(newPicks[index]);
+                    components.RemoveAt(i);
+                    newPicks.RemoveAt(i);
+                }
+
+                //if there are components left, clear them and set them
+                for (int i = 0; i < components.Count; i++)
+                {
+                    if (i < newPicks.Count)
+                        components[i].Update(newPicks[i]);
+                    else
+                        components[i].Update(null);
+                }
+            });
+            
+            Invoke(updateAc);
         }
 
-        public void UpdatePick(int slot, Pick pick)
+        private void GAFStreamTool_FormClosing(object sender, FormClosingEventArgs e)
         {
-            PickComponent comp = _pickComponents[slot - 1];
+            if (Program.SettingsForm != null && !Program.SettingsForm.Closed)
+                Program.SettingsForm.Close();
 
-            Image img = null;
-            if (!comp.PBImagePath.Equals(pick.Image))
-            {
-                string path = Path.Combine("cachedImage\\", pick.Team + ".image");
+            Pick.StopAutoPickUpdate();
 
-                if (!File.Exists(path))
-                    using (WebClient wc = new WebClient())
-                        wc.DownloadFile(pick.Image, path);
+            if (Program.Client != null && 
+                Program.Client.CurrentState != Network.Client.State.Failed &&
+                Program.Client.CurrentState != Network.Client.State.Disconnected &&
+                Program.Client.CurrentState != Network.Client.State.Disconnecting)
+                Program.Client.Dispose();
+        }
 
-                img = Image.FromFile(path);
-            }
+        private void GAFStreamTool_Load(object sender, EventArgs e)
+        {
 
-            SetPick(slot, pick.Team, pick.PickedBy, img);
         }
     }
 }

@@ -84,7 +84,7 @@ namespace GAFBot.API.Json
         public int MVPPlayerID { get; set; }
 
         [JsonProperty("timeStamp")]
-        public DateTime TimeStamp { get; set; }
+        public string TimeStamp { get; set; }
 
         public SendOsuResult(int iD, string matchName, TeamInfo[] teams, BeatmapInfo[] beatmaps, PlayerInfo[] players, HighestRankingInfo highestScore, HighestRankingInfo highestAccuracy, int mVPPlayerID, DateTime timeStamp)
         {
@@ -98,7 +98,7 @@ namespace GAFBot.API.Json
                 HighestScore = highestScore;
                 HighestAccuracy = highestAccuracy;
                 MVPPlayerID = mVPPlayerID;
-                TimeStamp = timeStamp;
+                TimeStamp = $"{timeStamp.Hour}:{timeStamp.Minute}:{timeStamp.Second}";
             }
             catch (Exception ex)
             {

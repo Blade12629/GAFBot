@@ -5,6 +5,9 @@ using GAFBot.Osu.results;
 using System.Linq;
 using System;
 using DSharpPlus.Entities;
+using GAFBot.Database;
+using GAFBot.Database.Models;
+using DBPlayer = GAFBot.Database.Models.Player;
 
 namespace GAFBot.Osu
 {
@@ -15,6 +18,98 @@ namespace GAFBot.Osu
         private const float _missesMulti = 0.1f;
         private const float _comboMulti = 1.0f;
         private const float _300Multi = 1.0f;
+        
+        public AnalyzerQualifierResult CreateQualifierStatistics(HistoryJson.History history, int matchId)
+        {
+            AnalyzerQualifierResult result = null;
+            string matchName = history.Events.FirstOrDefault(ob => ob.Detail.Type == "other").Detail.MatchName;
+            HistoryJson.Game[] games = GetData.GetMatches(history);
+            //beatmapid, score
+            List<QualifierTeam> teams = new List<QualifierTeam>();
+
+            List<Team> dbTeams = new List<Team>();
+            List<DBPlayer> dbPlayers = new List<DBPlayer>();
+            List<TeamPlayerList> dbTeamPlayerList = new List<TeamPlayerList>();
+
+            using (GAFContext context = new GAFContext())
+            {
+                foreach (var game in games)
+                {
+                    foreach (var score in game.scores)
+                    {
+                        if (!score.user_id.HasValue)
+                            continue;
+                        
+                        DBPlayer dbPlayer = dbPlayers.FirstOrDefault(p => p.OsuId.Value == score.user_id.Value);
+
+                        if (dbPlayer == null)
+                        {
+                            dbPlayer = context.Player.FirstOrDefault(p => p.OsuId.HasValue && p.OsuId.Value == score.user_id.Value);
+                            dbPlayers.Add(dbPlayer);
+                        }
+
+                        TeamPlayerList dbTeamPlayer = dbTeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.Value == dbPlayer.Id);
+                        
+                        if (dbTeamPlayer == null)
+                        {
+                            dbTeamPlayer = context.TeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.HasValue && tp.PlayerListId.Value == dbPlayer.Id);
+
+                            dbTeamPlayerList.Add(dbTeamPlayer);
+                        }
+                        
+                        Team dbTeam = dbTeams.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId);
+
+                        if (dbTeam == null)
+                        {
+                            dbTeam = context.Team.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId.Value);
+                            dbTeams.Add(dbTeam);
+                        }
+                        
+                        QualifierTeam team = teams.FirstOrDefault(t => t.TeamName.Equals(dbTeam.Name));
+
+                        if (team == null)
+                        {
+                            team = new QualifierTeam(dbTeam.Name, new QualifierPlayer[]
+                            {
+                                new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
+                                {
+                                    (game.beatmap.id.Value, score)
+                                })
+                            });
+
+                            teams.Add(team);
+                        }
+                        else
+                        {
+                            QualifierPlayer player = team.Players.FirstOrDefault(p => p.UserId == dbPlayer.OsuId.Value);
+
+                            if (player == null)
+                            {
+                                List<QualifierPlayer> players = team.Players.ToList();
+                                players.Add(new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
+                                {
+                                    (game.beatmap.id.Value, score)
+                                }));
+
+                                team.Players = players.ToArray();
+                            }
+                            else
+                            {
+                                List<(long, HistoryJson.Score)> scores = player.Scores.ToList();
+                                scores.Add((game.beatmap.id.Value, score));
+
+                                player.Scores = scores.ToArray();
+                            }
+                        }
+                    }
+                }
+            }
+
+            result = new AnalyzerQualifierResult(matchId, "stage", matchName, teams.ToArray());
+            result.TimeStamp = history.Events.Last().TimeStamp;
+
+            return result;
+        }
 
         /// <summary>
         /// Creates a statistic for a osu mp match
@@ -38,7 +133,7 @@ namespace GAFBot.Osu
                 (string, string) teamNames = GetVersusTeamNames(matchName);
                 Tuple<int, int> wins = GetWins(games);
                 TeamColor winningTeam = wins.Item1 > wins.Item2 ? TeamColor.Blue : TeamColor.Red;
-                TeamColor losingTeam = wins.Item1 < wins.Item2 ? TeamColor.Blue : TeamColor.Red;
+                TeamColor losingTeam = wins.Item1 > wins.Item2 ? TeamColor.Red : TeamColor.Blue;
 
                 result = new AnalyzerResult()
                 {
@@ -77,7 +172,7 @@ namespace GAFBot.Osu
         /// <summary>
         /// parses a osu mp match
         /// </summary>
-        public (HistoryJson.History, int) ParseMatch(string matchIdString)
+        public (HistoryJson.History, int) ParseMatch(string matchIdString, params string[] parameters)
         {
             const string historyUrl = "https://osu.ppy.sh/community/matches/";
             const string historyUrlVariant = "https://osu.ppy.sh/mp/";
@@ -128,6 +223,15 @@ namespace GAFBot.Osu
                 return (null, 0);
 
             string endpointUrl = $"https://osu.ppy.sh/community/matches/{matchId}/history";
+
+            if (parameters != null && parameters.Length > 0)
+            {
+                endpointUrl += "?" + parameters[0];
+
+                for (int i = 1; i < parameters.Length; i++)
+                    endpointUrl += "&" + parameters[i];
+            }
+
             HistoryJson.History historyJson = GetData.ParseJsonFromUrl(endpointUrl);
 
             return (historyJson, matchId);
@@ -368,6 +472,53 @@ namespace GAFBot.Osu
             playCounts.ToArray());
         }
 
+        public DiscordEmbed CreateQualifierStatisticEmbed(AnalyzerQualifierResult ar, DiscordColor embedColor)
+        {
+            string analyzerMatchPlayed;
+            using (Database.GAFContext context = new Database.GAFContext())
+                analyzerMatchPlayed = context.BotLocalization.First(l => l.Code.Equals("analyzerMatchPlayed")).String;
+
+            DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+            {
+                Title = "Qualifier Stats",
+                Description = ".",
+                Footer = new DiscordEmbedBuilder.EmbedFooter()
+                {
+                    Text = $"{analyzerMatchPlayed} {ar.TimeStamp}",
+                },
+                Color = embedColor,
+            };
+            
+            foreach(var team in ar.Teams)
+            {
+                string teamName = team.TeamName;
+                string playerScores = "";
+                long totalTeamScore = 0;
+
+                foreach(var player in team.Players)
+                {
+                    long totalPlayerScore = 0;
+
+                    playerScores += player.UserName + ": ";
+
+                    foreach (var score in player.Scores)
+                    {
+                        int scoreVal = score.Item2.score ?? 0;
+
+                        totalPlayerScore += scoreVal;
+                        totalTeamScore += scoreVal;
+                    }
+                    playerScores += string.Format("{0:n0}", totalPlayerScore) + Environment.NewLine;
+                }
+
+                playerScores = playerScores.TrimEnd(Environment.NewLine.ToArray());
+
+                builder.AddField($"Scores for {teamName} (TotalScore: {string.Format("{0:n0}", totalTeamScore)})", playerScores);
+            }
+
+            return builder.Build();
+        }
+
         public DiscordEmbed CreateStatisticEmbed(AnalyzerResult ar, DiscordColor embedColor)
         {
             string analyzerTeam, analyzerWon;
@@ -550,7 +701,7 @@ namespace GAFBot.Osu
                     red++;
             }
             
-            return new Tuple<int, int>(red, blue);
+            return new Tuple<int, int>(blue, red);
         }
     }
 }

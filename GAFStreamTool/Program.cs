@@ -33,12 +33,33 @@ namespace GAFStreamTool
             Application.SetCompatibleTextRenderingDefault(false);
 
             Config = new Config("94.130.68.58", "40015");
-            Config.Load();
+
+            if (!Config.Load())
+            {
+                MessageBox.Show("Could not find or read config.cfg");
+                return;
+            }
+
             Key = new ApiKey();
-            Key.Read();
+            if (!Key.Read())
+            {
+                MessageBox.Show("Could not find or read config.cfg");
+                return;
+            }
 
             if (args != null && args.Length > 0 && args[0].StartsWith("-install"))
             {
+                if (string.IsNullOrEmpty(Key.RegisterCode) || Key.RegisterCode.Equals("Your Register Code", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    MessageBox.Show("You did not set your register code");
+                    Environment.Exit(-1);
+                }
+                else if (string.IsNullOrEmpty(Key.Key) || Key.Key.Equals("Your Password", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    MessageBox.Show("You did not set your password");
+                    Environment.Exit(-1);
+                }
+
                 RegistryEditor.Set("ColorTextR", Config.RGBText[0]);
                 RegistryEditor.Set("ColorTextG", Config.RGBText[1]);
                 RegistryEditor.Set("ColorTextB", Config.RGBText[2]);
@@ -119,7 +140,7 @@ namespace GAFStreamTool
             _mainThread = new Thread(new ThreadStart(() =>
             {
                 Application.Run(MainForm);
-                Client.Dispose();
+                //Client.Dispose();
                 Environment.Exit(0);
             }));
             _mainThread.SetApartmentState(ApartmentState.STA);

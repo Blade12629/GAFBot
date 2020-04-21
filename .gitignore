@@ -25,6 +25,8 @@ bld/
 [Ll]og/
 compiled/
 ../compiled/
+ScriptingModule/
+../ScriptingModule/
 
 # Visual Studio 2015 cache/options directory
 .vs/

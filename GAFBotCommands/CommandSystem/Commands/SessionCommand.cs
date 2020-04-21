@@ -1,4 +1,6 @@
-﻿using GAFBot.Database.Models;
+﻿using DSharpPlus.Entities;
+using GAFBot.Database;
+using GAFBot.Database.Models;
 using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
@@ -15,10 +17,13 @@ namespace GAFBot.Commands
 
         public string Description => "Gets info about the current tourney session";
 
+        /// <summary>
+        /// 
+        /// </summary>
         public string DescriptionUsage => "!session p osuUserId" + Environment.NewLine +
-                                          "!session profile osuUserId" + Environment.NewLine +
-                                          "!session top10" + Environment.NewLine +
-                                          "!session top pageX" + Environment.NewLine;
+                                          "!session profile osuUserId" + Environment.NewLine /*+*/
+                                          //"!session top10" + Environment.NewLine +
+                                          /*"!session top pageX" + Environment.NewLine*/;
 
         public static void Init()
         {
@@ -26,95 +31,244 @@ namespace GAFBot.Commands
             Logger.Log(nameof(SessionCommand) + " Registered");
         }
 
+        /*
+         * ToDo:
+         * remove qualifier tables
+         * merge tables together
+         * store gps for player in extra table called bot_analyzer_gps
+         * create cache for player cards called bot_player_cards
+         * update cache only when new result comes in
+         * check if mplink has more than 100 events if yes merge them
+         */
         public void Activate(CommandEventArg e)
         {
-            Coding.Discord.SendMessage(e.ChannelID, "Disabled for now");
-
-            return;
-            
             if (string.IsNullOrEmpty(e.AfterCMD))
+            {
+                Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
                 return;
-
-            string[] cmdSplit = e.AfterCMD.Split(' ');
-
-
-            AccessLevel access;
-
-            using (Database.GAFContext context = new Database.GAFContext())
-            {
-                BotUsers user = context.BotUsers.First(u => (ulong)u.DiscordId == e.DUserID);
-                access = (AccessLevel)user.AccessLevel;
             }
 
-            if (cmdSplit[0].Equals("profile") || cmdSplit[0].Equals("p"))
+            string userIdString = e.AfterCMD.ToLower();
+
+            if (userIdString.StartsWith("profile", StringComparison.CurrentCultureIgnoreCase))
+                userIdString = e.AfterCMD.Remove(0, "profile ".Length);
+            else if (userIdString[0] == 'p')
+                userIdString = e.AfterCMD.Remove(0, 2);
+            else if (userIdString.StartsWith("top"))
             {
-                #region withSession
-                /*if (cmdSplit[1].StartsWith('"'))
-                //{
-                //    string sessionName = cmdSplit[1].TrimStart('"');
-                //    for (int i = 2; i < cmdSplit.Length; i++)
-                //    {
-                //        if (cmdSplit[i].EndsWith('"'))
-                //        {
-                //            sessionName += " " + cmdSplit[i].TrimEnd('"');
-                //            break;
-                //        }
+                string[] lsplit = userIdString.Split(' ');
 
-                //        sessionName += " " + cmdSplit[i];
-                //    }
-                }*/
-                #endregion
-
-                int userid = -1;
-
-                if (!int.TryParse(cmdSplit[1], out userid))
+                if (!int.TryParse(lsplit[1], out int topPage))
+                {
+                    Coding.Discord.SendMessage(e.ChannelID, "Could not parse page: " + lsplit[1]);
                     return;
+                }
 
-                var channel = Coding.Discord.GetChannel(e.ChannelID);
-                var profile = Osu.OsuTourneySession.GetPlayerProfileDB(userid, Program.Config.CurrentSeason);
-                channel.SendMessageAsync(embed: Osu.OsuTourneySession.BuildProfile(profile));
+                List<BotSeasonPlayerCardCache> top10List = new List<BotSeasonPlayerCardCache>();
+
+                int indexStart = topPage - 10;
+                int indexEnd = indexStart + 10;
+
+                using (GAFContext context = new GAFContext())
+                    top10List.AddRange(context.BotSeasonPlayerCardCache.OrderByDescending(cc => cc.OverallRating).ToList());
+
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                {
+                    Title = $"Top {topPage} Players",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                string list = "";
+
+                for (int i = indexStart; i < top10List.Count && i <= indexEnd - 1; i++)
+                {
+                    var cc = top10List[i];
+                    int place = i + 1;
+
+                    string placeString = $"{place}.";
+
+                    switch(place)
+                    {
+                        case 1:
+                            placeString = "1st";
+                            break;
+                        case 2:
+                            placeString = "2nd";
+                            break;
+                        case 3:
+                            placeString = "3rd";
+                            break;
+                        case 4:
+                            placeString = "4th";
+                            break;
+                    }
+
+                    list += Environment.NewLine + $"{placeString} {cc.Username} (id: {cc.OsuUserId}) Rating: {cc.OverallRating}";
+                }
+
+                list = list.TrimStart(Environment.NewLine.ToCharArray());
+
+                builder.AddField("Top " + topPage, list);
+
+                Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: builder.Build()).Wait();
+                return;
             }
-            else if (cmdSplit[0].Equals("top10", StringComparison.CurrentCultureIgnoreCase))
+            else if (userIdString.StartsWith("count"))
             {
-                GetAndSendTopList(e.ChannelID, 0);
+                int count = 0;
+                using (GAFContext context = new GAFContext())
+                    count = context.BotSeasonPlayerCardCache.Count();
+
+                Coding.Discord.SendMessage(e.ChannelID, "Players: " + count);
+                return;
             }
-            else if (cmdSplit[0].Equals("top", StringComparison.CurrentCultureIgnoreCase))
+            else if (userIdString.StartsWith("last"))
             {
-                if (!int.TryParse(cmdSplit[1], out int offset))
-                    return;
+                List<BotSeasonPlayerCardCache> top10List = new List<BotSeasonPlayerCardCache>();
 
-                GetAndSendTopList(e.ChannelID, offset);
+                using (GAFContext context = new GAFContext())
+                    top10List.AddRange(context.BotSeasonPlayerCardCache.OrderByDescending(cc => cc.OverallRating).ToList());
+
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                {
+                    Title = $"Last Players",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                string list = "";
+
+                for (int i = top10List.Count - 10; i < top10List.Count; i++)
+                {
+                    var cc = top10List[i];
+                    int place = i + 1;
+
+                    list += Environment.NewLine + $"{place}. {cc.Username} (id: {cc.OsuUserId}) Rating: {cc.OverallRating}";
+                }
+
+                list = list.TrimStart(Environment.NewLine.ToCharArray());
+
+                builder.AddField("Last of all", list);
+
+                Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: builder.Build()).Wait();
+                return;
             }
-        }
+            else
+            {
+                Coding.Discord.SendMessage(e.ChannelID, DescriptionUsage);
+                return;
+            }
 
-        private void GetAndSendTopList(ulong channelId, int offset = 0)
-        {
-            //var playerProfiles = Osu.SessionHandler.CurrentSession.GetTopPlayers(offset);
-            //var dchannel = Coding.Methods.GetChannel(channelId);
+            if (!long.TryParse(userIdString, out long userId))
+            {
+                Coding.Discord.SendMessage(e.ChannelID, "Could not parse userid: " + userIdString);
+                return;
+            }
 
-            //string topList = "";
+            DiscordEmbed statistics = Statistic.StatsHandler.GetPlayerStatistics(userId);
 
-            //for (int i = 0; i < playerProfiles.Count(); i++)
+            Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: statistics).Wait();
+
+            //List<BotAnalyzerRank> ranks = new List<BotAnalyzerRank>();
+            //List<BotAnalyzerScore> scores = new List<BotAnalyzerScore>();
+            //Player player;
+            //using (GAFContext context = new GAFContext())
             //{
-            //    var profile = playerProfiles.ElementAt(i);
-
-            //    var embed = Osu.SessionHandler.BuildProfile(profile);
-            //    topList += $"{Environment.NewLine}{offset * 10 + i + 1}: {profile.UserName} (OR: {profile.OverallRating}, userID: {profile.UserId})";
+            //    ranks.AddRange(context.BotAnalyzerRank.Where(r => r.PlayerOsuId == userId));
+            //    scores.AddRange(context.BotAnalyzerScore.Where(s => s.UserId == userId));
+            //    player = context.Player.FirstOrDefault(p => p.OsuId == userId);
             //}
 
-            //topList.TrimStart(Environment.NewLine.ToCharArray());
+            //PlayerCard pc = new PlayerCard();
 
-            //DSharpPlus.Entities.DiscordEmbedBuilder builder = new DSharpPlus.Entities.DiscordEmbedBuilder()
+            //foreach(BotAnalyzerScore score in scores)
             //{
-            //    Title = $"Top {(offset + 1) * 10} players",
-            //    Description = topList,
-            //    Author = new DSharpPlus.Entities.DiscordEmbedBuilder.EmbedAuthor()
-            //    {
-            //        IconUrl = "https://cdn.discordapp.com/attachments/239737922595717121/621452111607234571/AYEorNAY.png"
-            //    }
-            //};
+            //    pc.AverageAccuracy += 100.0 * score.Accuracy;
+            //    pc.AverageScore += score.Score;
+            //    pc.AverageCombo += score.MaxCombo;
+            //    pc.AverageMisses += score.CountMiss;
 
-            //dchannel.SendMessageAsync(embed: builder.Build()).Wait();
+            //    BotAnalyzerRank rank = ranks.FirstOrDefault(r => r.MatchId == score.MatchId && r.PlayerOsuId == score.UserId);
+
+            //    if (rank == null)
+            //    {
+
+            //        continue;
+            //    }
+
+            //    pc.AverageGPS += rank.MvpScore;
+            //}
+
+            //pc.AverageGPS /= scores.Count;
+            //pc.AverageAccuracy /= scores.Count;
+            //pc.AverageScore /= scores.Count;
+            //pc.AverageCombo /= scores.Count;
+            //pc.AverageMisses /= scores.Count;
+
+            //if (player != null)
+            //{
+            //    pc.Username = player.Nickname;
+            //    pc.CountryCode = player.Country;
+            //}
+
+            //pc.UserId = userId;
+            //pc.AvatarUrl = "https://a.ppy.sh/" + userId;
+            //pc.PlayCount = scores.Count;
+
+            //Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: Build(pc)).Wait();
+        }
+
+        private DiscordEmbed Build(PlayerCard pc)
+        {
+            DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+            {
+                ThumbnailUrl = pc.AvatarUrl,
+                Timestamp = DateTime.UtcNow,
+                Author = new DiscordEmbedBuilder.EmbedAuthor()
+                {
+                    IconUrl = $"https://osu.ppy.sh/images/flags/{pc.CountryCode}.png",
+                    Name = "Stats for: " + pc.Username ?? pc.UserId.ToString()
+                },
+            };
+
+            builder.AddField("Average Accuracy", Math.Round(pc.AverageAccuracy, 2, MidpointRounding.AwayFromZero).ToString() + "%", true);
+            builder.AddField("Average Misses", Math.Truncate(pc.AverageMisses).ToString(), true);
+            builder.AddField("Average Score", string.Format("{0:n0}", Math.Truncate(pc.AverageScore)).ToString(), true);
+            builder.AddField("Average Combo", Math.Truncate(pc.AverageCombo).ToString(), true);
+            builder.AddField("Average GPS", Math.Round(pc.AverageGPS, 2, MidpointRounding.AwayFromZero).ToString(), true);
+            builder.AddField("Play Count", pc.PlayCount.ToString(), true);
+
+            builder.AddField("Overall Rating", pc.OverallRating.ToString(), true);
+
+            return builder.Build();
+        }
+
+        private class PlayerCard
+        {
+            public double AverageAccuracy;
+            public double AverageMisses;
+            public double AverageScore;
+            public double AverageCombo;
+            public double AverageGPS;
+            public double OverallRating;
+            public string Username;
+            public long UserId;
+
+            public string CountryCode;
+            public int PlayCount;
+            public string AvatarUrl;
+        }
+    }
+
+    public static class SessionCommandExtension
+    {
+        public static List<T> GetRange<T>(this List<T> input, int start, int count)
+        {
+            List<T> result = new List<T>();
+
+            for (int i = start; i < input.Count && i <= start + count; i++)
+                result.Add(input[i]);
+
+            return result;
         }
     }
 }
