@@ -41,7 +41,6 @@ namespace GAFBot.Database
         public virtual DbSet<BotAnalyzerQualifierPlayer> BotAnalyzerQualifierPlayer { get; set; }
         public virtual DbSet<Beatmap> Beatmap { get; set; }
         public virtual DbSet<BeatmapMod> BeatmapMod { get; set; }
-        public virtual DbSet<BotSeasonMMR> BotSeasonMMR { get; set; }
         public virtual DbSet<BotSeasonPlayer> BotSeasonPlayer { get; set; }
         public virtual DbSet<BotSeasonResult> BotSeasonResult { get; set; }
         public virtual DbSet<BotSeasonScore> BotSeasonScore { get; set; }
@@ -66,26 +65,38 @@ namespace GAFBot.Database
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
-            modelBuilder.Entity<BotSeasonMMR>(entity =>
+            modelBuilder.Entity<BotTimer>(entity =>
             {
-                entity.ToTable("bot_season_mmr");
+                entity.ToTable("bot_timer");
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.MMR)
-                    .HasColumnName("mmr")
-                    .HasColumnType("double");
-
-                entity.Property(e => e.BotSeasonPlayerId)
-                    .HasColumnName("bot_season_player_id")
+                entity.Property(e => e.Enabled)
+                    .HasColumnName("enabled")
+                    .HasColumnType("tinyint(1)");
+                entity.Property(e => e.StartTime)
+                    .HasColumnName("start_time")
+                    .HasColumnType("datetime");
+                entity.Property(e => e.EndTime)
+                    .HasColumnName("end_time")
+                    .HasColumnType("datetime");
+                entity.Property(e => e.PingMessage)
+                    .HasColumnName("ping_message")
+                    .HasColumnType("text")
+                    .HasDefaultValue("no info given");
+                entity.Property(e => e.CreatedByDiscordId)
+                    .HasColumnName("created_by_discord_id")
                     .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.BotSeasonResultId)
-                    .HasColumnName("bot_season_result_id")
+                entity.Property(e => e.DiscordChannelId)
+                    .HasColumnName("discord_channel_id")
                     .HasColumnType("bigint(20)");
+                entity.Property(e => e.IsPrivateChannel)
+                    .HasColumnName("is_private_channel")
+                    .HasColumnType("tinyint(1)");
+                entity.Property(e => e.Expired)
+                    .HasColumnName("expired")
+                    .HasColumnType("tinyint(1)");
             });
 
             modelBuilder.Entity<BotSeasonPlayer>(entity =>

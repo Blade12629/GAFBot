@@ -320,77 +320,89 @@ namespace MessageModule
         {
             Task.Run(() =>
             {
-                string channel = (messageArgs.Channel == null || string.IsNullOrEmpty(messageArgs.Channel.Name) ? "null" : messageArgs.Channel.Name);
-
-                //Ignore web-changelog
-                if (messageArgs.Channel.Id == 651838498868953099)
-                    return;
-
-                string logMsg = $"MessageHandler: New message: Channel: {channel}: User: {messageArgs.Author.Username}: {messageArgs.Message.Content}";
-
-                Logger.Log(logMsg);
-
-                string embed = "";
-                if (messageArgs.Message.Embeds != null && messageArgs.Message.Embeds.Count > 0)
+                try
                 {
-                    for (int i = 0; i < messageArgs.Message.Embeds.Count; i++)
+                    string channel = (messageArgs.Channel == null || string.IsNullOrEmpty(messageArgs.Channel.Name) ? "null" : messageArgs.Channel.Name);
+
+                    //Ignore web-changelog
+                    if (messageArgs.Channel.Id == 651838498868953099)
+                        return;
+
+                    string logMsg = $"MessageHandler: New message: Channel: {channel}: User: {messageArgs.Author.Username}: {messageArgs.Message.Content}";
+
+                    Logger.Log(logMsg);
+
+                    string embed = "";
+                    if (messageArgs.Message.Embeds != null && messageArgs.Message.Embeds.Count > 0)
                     {
-                        DiscordEmbed emb = messageArgs.Message.Embeds.ElementAt(i);
-
-                        embed += $"ID: {i}: Title: {emb.Title ?? "null"}, Description: {emb.Description ?? "null"}";
-
-                        if (emb.Fields != null)
-                            foreach (var field in emb.Fields)
-                                embed += Environment.NewLine + $"Title: {field.Name ?? "null"}, Description: {field.Value ?? "null"}, Inline: {field.Inline}";
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(embed))
-                    Logger.Log("Embeds: " + embed);
-
-                Register(messageArgs.Author);
-
-                string message = messageArgs.Message.Content;
-
-                if (messageArgs.Channel.Id == (ulong)Program.Config.AnalyzeChannel)
-                {
-                    //check if we are in qualifier stage or not
-                    string[] lineSplit = messageArgs.Message.Content.Split(new char[] { '\r', '\n' });
-                    lineSplit[0] = lineSplit[0].Replace("dq!", "");
-
-                    string[] wSplit;
-                    foreach (string line in lineSplit)
-                    {
-                        if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
+                        for (int i = 0; i < messageArgs.Message.Embeds.Count; i++)
                         {
-                            wSplit = line.Split('-');
-                            string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
+                            DiscordEmbed emb = messageArgs.Message.Embeds.ElementAt(i);
 
-                            if (stage.Equals("qualifier", StringComparison.CurrentCultureIgnoreCase))
-                                StartQualifierAnalyzer(messageArgs);
-                            else
-                                StartAnalyzer(messageArgs);
+                            embed += $"ID: {i}: Title: {emb.Title ?? "null"}, Description: {emb.Description ?? "null"}";
 
-                            break;
+                            if (emb.Fields != null)
+                                foreach (var field in emb.Fields)
+                                    embed += Environment.NewLine + $"Title: {field.Name ?? "null"}, Description: {field.Value ?? "null"}, Inline: {field.Inline}";
                         }
                     }
 
-                    return;
+                    if (!string.IsNullOrEmpty(embed))
+                        Logger.Log("Embeds: " + embed);
+
+                    Register(messageArgs.Author);
+
+                    string message = messageArgs.Message.Content;
+
+                    if (messageArgs.Channel.Id == (ulong)Program.Config.AnalyzeChannel)
+                    {
+                        //check if we are in qualifier stage or not
+                        string[] lineSplit = messageArgs.Message.Content.Split(new char[] { '\r', '\n' });
+                        lineSplit[0] = lineSplit[0].Replace("dq!", "");
+
+                        string[] wSplit;
+                        foreach (string line in lineSplit)
+                        {
+                            if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                wSplit = line.Split('-');
+                                string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
+
+                                if (stage.Equals("qualifier", StringComparison.CurrentCultureIgnoreCase))
+                                    StartQualifierAnalyzer(messageArgs);
+                                else
+                                    StartAnalyzer(messageArgs);
+
+                                break;
+                            }
+                        }
+
+                        return;
+                    }
+
+                    BotUsers buser;
+                    using (GAFContext context = new GAFContext())
+                        buser = context.BotUsers.FirstOrDefault(b => (ulong)b.DiscordId.Value == messageArgs.Author.Id);
+
+                    //Hoaq == 154605183714852864
+                    if (buser.DiscordId == 154605183714852864 && messageArgs.Message.Content.StartsWith("hiss~"))
+                    {
+                        Coding.Discord.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
+                        return;
+                    }
+
+                    if (!char.IsLetterOrDigit(message[0]))
+                        Task.Run(() => Program.CommandHandler.ActivateCommand(messageArgs.Message, (AccessLevel)buser.AccessLevel));
                 }
-
-                BotUsers buser;
-                using (GAFContext context = new GAFContext())
-                    buser = context.BotUsers.FirstOrDefault(b => (ulong)b.DiscordId.Value == messageArgs.Author.Id);
-
-                //Hoaq == 154605183714852864
-                if (buser.DiscordId == 154605183714852864 && messageArgs.Message.Content.StartsWith("hiss~"))
+                catch (Exception ex)
                 {
-                    Coding.Discord.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
-                    return;
+#if DEBUG
+                    bool console = true;
+#else
+                    bool console = false;
+#endif
+                    Logger.Log(ex.ToString(), LogLevel.ERROR, console);
                 }
-
-                if (!char.IsLetterOrDigit(message[0]))
-                    Task.Run(() => Program.CommandHandler.ActivateCommand(messageArgs.Message, (AccessLevel)buser.AccessLevel));
             });
         }
 
@@ -627,20 +639,29 @@ namespace MessageModule
                     //<https://osu.ppy.sh/community/matches/53616778> 
                     //<https://osu.ppy.sh/mp/53616778> 
 
-                    GAFBot.Statistic.StatsHandler.UpdateSeasonStatistics(message, Program.Config.CurrentSeason);
+                    using (GAFContext context = new GAFContext())
+                        if (!GAFBot.Statistic.StatsHandler.UpdateSeasonStatistics(message, Program.Config.CurrentSeason, context))
+                            return;
 
 
                     GAFBot.Osu.Analyzer analyzer = new GAFBot.Osu.Analyzer();
                     var matchData = analyzer.ParseMatch(message);
+
 
                     const string BAN_PATTERN = "bans from";
 
                     string[] lineSplit = message.Split(new char[] { '\r', '\n' });
                     lineSplit[0] = lineSplit[0].Replace("d!", "");
 
+                    if (matchData.Item2 == -1 && matchData.Item1 == null)
+                        return;
+
                     AnalyzerResult analyzerResult = analyzer.CreateStatistic(matchData.Item1, matchData.Item2);
 
-                    var embed = GAFBot.Statistic.StatsHandler.GetMatchResultEmbed(analyzerResult.MatchId);
+                    DiscordEmbed embed;
+                    using (GAFContext context = new GAFContext())
+                        embed = GAFBot.Statistic.StatsHandler.GetMatchResultEmbed(analyzerResult.MatchId, context);
+
                     Coding.Discord.GetChannel((ulong)Program.Config.AnalyzeChannel).SendMessageAsync(embed: embed).Wait();
 
                     List<BanInfo> bans = new List<BanInfo>();
@@ -691,8 +712,8 @@ namespace MessageModule
 
                             bans.Add(new BanInfo(artist, title, version, bannedBy));
                         }
-                    }
 
+                    }
                     if (analyzerResult == null)
                     {
                         Logger.Log("Failed to create result", LogLevel.ERROR);
@@ -737,6 +758,8 @@ namespace MessageModule
                 catch (Exception ex)
                 {
                     Logger.Log(ex.ToString(), LogLevel.ERROR);
+
+                    Coding.Discord.SendMessage(channel, "~ Place Holder ~\nMatch stats will be available at a later time");
                 }
             });
         }

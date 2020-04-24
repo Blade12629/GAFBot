@@ -11,7 +11,7 @@ namespace GAFBot.Commands
         public char Activator { get => '!'; }
         public char ActivatorSpecial { get => default(char); }
         public string CMD { get => "infou"; }
-        public AccessLevel AccessLevel => AccessLevel.Admin;
+        public AccessLevel AccessLevel => AccessLevel.Moderator;
 
         public string Description => "Displays info about an discord user";
 
@@ -34,7 +34,7 @@ namespace GAFBot.Commands
             else if (e.AfterCMD.StartsWith("verifications"))
             {
                 using (Database.GAFContext context = new Database.GAFContext())
-                    Coding.Discord.SendMessage(e.ChannelID, "Currently verified players: " + context.BotUsers.Where(bu => bu.IsVerified));
+                    Coding.Discord.SendMessage(e.ChannelID, "Currently verified players: " + context.BotUsers.Where(bu => bu.IsVerified)?.Count());
                 return;
             }
             else if (!ulong.TryParse(e.AfterCMD, out userid))

@@ -87,6 +87,39 @@ namespace GAFBot.Database.Readers
             return dbSet.Where(func).ToList();
         }
 
+        public int GetCount()
+        {
+            var set = GetSet();
+            return set.Count();
+        }
+
+        public int GetCount(Func<T, bool> func)
+        {
+            var set = GetSet();
+            return set.Count(func);
+        }
+
+        public virtual void Remove(Func<T, bool> searchFunc)
+        {
+            var set = GetSet();
+
+            T obj = set.FirstOrDefault(searchFunc);
+
+            if (obj == null)
+                return;
+
+            set.Remove(obj);
+        }
+        public virtual void RemoveAll(Func<T, bool> searchFunc)
+        {
+            var set = GetSet();
+
+            List<T> toRemove = set.Where(searchFunc).ToList();
+
+            for (int i = 0; i < toRemove.Count; i++)
+                set.Remove(toRemove[i]);
+        }
+
         public virtual void Save()
         {
             _context.SaveChanges();

@@ -19,7 +19,9 @@ namespace GAFBot.Commands
 
         public string Description => "Displays a list of available commands";
 
-        public string DescriptionUsage => "Usage: !help";
+        public string DescriptionUsage => "Usage:" + Environment.NewLine +
+                                          "!help" + Environment.NewLine +
+                                          "!help command";
 
         public static void Init()
         {
@@ -29,6 +31,29 @@ namespace GAFBot.Commands
 
         public void Activate(CommandEventArg e)
         {
+            if (!string.IsNullOrEmpty(e.AfterCMD))
+            {
+                ICommand command = (Program.CommandHandler as CommandHandler).ActiveCommands.FirstOrDefault(c => (c.Activator.Equals(e.AfterCMD[0]) &&
+                                                                                                                  c.CMD.Equals(e.AfterCMD.Remove(0, 1), StringComparison.CurrentCultureIgnoreCase)) ||
+                                                                                                                  c.CMD.Equals(e.AfterCMD, StringComparison.CurrentCultureIgnoreCase));
+
+                if (command == null)
+                {
+                    Coding.Discord.SendMessage(e.ChannelID, "Command not found");
+                    return;
+                }
+
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                {
+                    Title = "Command Info for " + command.Activator + command.CMD
+                };
+
+                builder.AddField((!string.IsNullOrEmpty(command.Description) ? command.Description : "null"), (!string.IsNullOrEmpty(command.DescriptionUsage) ? command.DescriptionUsage : "null"));
+
+                Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: builder.Build());
+                return;
+            }
+
             ICommand[] commands = (Program.CommandHandler as CommandHandler).ActiveCommands.ToArray();
             string response = "";
 

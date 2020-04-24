@@ -24,7 +24,8 @@ namespace GAFBot.Commands
 
         public void Activate(CommandEventArg e)
         {
-            if (!e.AfterCMD.StartsWith("https://osu.ppy.sh/b", StringComparison.CurrentCultureIgnoreCase))
+            if (!e.AfterCMD.StartsWith("https://osu.ppy.sh/b", StringComparison.CurrentCultureIgnoreCase) &&
+                !e.AfterCMD.StartsWith("https://osu.ppy.sh/beatmapsets", StringComparison.CurrentCultureIgnoreCase))
                 return;
 
             (Modules.ModuleHandler.Get("message") as IMessageHandler)?.GetBeatmapInfo(e.AfterCMD, e.ChannelID);

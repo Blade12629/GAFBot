@@ -85,10 +85,17 @@ namespace GAFBot.Commands
                         return;
                     }
 
-                    Statistic.StatsHandler.UpdateSeasonStatistics(parameters.Trim('>', '<'), Program.Config.CurrentSeason);
 
-                    var matchEmbed = Statistic.StatsHandler.GetMatchResultEmbed(matchId);
-                    Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: matchEmbed);
+                    using (GAFContext context = new GAFContext())
+                    {
+                        if (Statistic.StatsHandler.UpdateSeasonStatistics(parameters.Trim('>', '<'), Program.Config.CurrentSeason, context))
+                        {
+                            var matchEmbed = Statistic.StatsHandler.GetMatchResultEmbed(matchId, context);
+                            Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: matchEmbed);
+                        }
+                        else
+                            Coding.Discord.SendMessage(e.ChannelID, "Failed");
+                    }
                 }
             }
             catch (Exception ex)

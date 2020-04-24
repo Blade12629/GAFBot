@@ -292,7 +292,7 @@ namespace GAFBot
             public static void SetUserName(ulong userId, ulong guildId, string name, string reason = "null")
             {
                 var member = GetMember(userId, guildId);
-                member.ModifyAsync(nickname: name, reason: reason).Wait();
+                member.ModifyAsync(nickname: name.Replace('_', ' '), reason: reason).Wait();
             }
             
             public static DSharpPlus.Entities.DiscordChannel GetChannel(ulong id)

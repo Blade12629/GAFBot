@@ -8,24 +8,24 @@ using GAFBot.MessageSystem;
 
 namespace GAFBot.Commands
 {
-    public class CountryCommand : ICommand
+    public class LocationCommand : ICommand
     {
         public char Activator => '!';
 
-        public string CMD => "country";
+        public string CMD => "location";
 
         public char ActivatorSpecial => char.MinValue;
 
         public AccessLevel AccessLevel => AccessLevel.Moderator;
 
-        public string Description => "Lists users and their countries";
+        public string Description => "Lists users and their location";
 
-        public string DescriptionUsage => "Usage: !country teamName";
+        public string DescriptionUsage => "Usage: !location teamName";
 
         public static void Init()
         {
-            Program.CommandHandler.Register(new CountryCommand());
-            Logger.Log(nameof(CountryCommand) + " Registered");
+            Program.CommandHandler.Register(new LocationCommand());
+            Logger.Log(nameof(LocationCommand) + " Registered");
         }
 
         public void Activate(CommandEventArg e)
@@ -91,7 +91,7 @@ namespace GAFBot.Commands
                 for (int i = 0; i < players.Count; i++)
                 {
                     builder.AddField("Player", players[i].Nickname, true);
-                    builder.AddField("Country", countryCodes[countryCodes.Keys.First(k => k.Equals(players[i].Country, StringComparison.CurrentCultureIgnoreCase))].Trim('"'), true);
+                    builder.AddField("Location", countryCodes[countryCodes.Keys.First(k => k.Equals(players[i].Country, StringComparison.CurrentCultureIgnoreCase))].Trim('"'), true);
                     builder.AddField("PP Raw", $"{players[i].PPRaw ?? '?'}", true);
                 }
 

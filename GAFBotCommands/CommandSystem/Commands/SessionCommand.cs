@@ -1,6 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using GAFBot.Database;
 using GAFBot.Database.Models;
+using GAFBot.Database.Readers;
 using GAFBot.MessageSystem;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace GAFBot.Commands
 
                     string placeString = $"{place}.";
 
-                    switch(place)
+                    switch (place)
                     {
                         case 1:
                             placeString = "1st";
@@ -151,6 +152,24 @@ namespace GAFBot.Commands
 
                 Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: builder.Build()).Wait();
                 return;
+            }
+            else if (userIdString.StartsWith("updateall"))
+            {
+                using (GAFContext context = new GAFContext())
+                {
+                    BaseDBReader<BotUsers> userReader = new BaseDBReader<BotUsers>();
+                    var user = userReader.Get(u => u.DiscordId == (long)e.DUserID);
+
+                    userReader.Dispose();
+
+                    if (user.AccessLevel < (int)AccessLevel.Admin)
+                    {
+                        Coding.Discord.SendMessage(e.ChannelID, "You do not have permissions to use this command!");
+                        return;
+                    }
+
+                    Statistic.StatsHandler.ForceRefreshAllCaches(e.ChannelID, context);
+                }
             }
             else
             {

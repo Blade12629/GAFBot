@@ -220,7 +220,7 @@ namespace GAFBot.Osu
             }
 
             if (matchId <= 0)
-                return (null, 0);
+                return (null, -1);
 
             string endpointUrl = $"https://osu.ppy.sh/community/matches/{matchId}/history";
 

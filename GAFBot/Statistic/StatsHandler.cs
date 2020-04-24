@@ -7,6 +7,7 @@ using OsuHistoryEndPoint;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace GAFBot.Statistic
     {
         public static DiscordEmbed GetPlayerStatistics(long osuUserId, GAFContext context = null)
         {
+            Logger.Log("Getting Player Statistics", LogLevel.Trace);
+
             bool dispose = context == null;
 
             BotSeasonPlayerCardCache cardCache;
@@ -77,8 +80,10 @@ namespace GAFBot.Statistic
             return builder.Build();
         }
 
-        public static DiscordEmbed GetMatchResultEmbed(long matchId, GAFContext context = null)
+        public static DiscordEmbed GetMatchResultEmbed(long matchId, GAFContext context)
         {
+            Logger.Log("Getting Match Result Embed", LogLevel.Trace);
+
             bool dispose = context == null;
 
             BaseDBReader<BotSeasonResult> seasonResultReader = new BaseDBReader<BotSeasonResult>(context);
@@ -109,14 +114,6 @@ namespace GAFBot.Statistic
                 BotSeasonPlayer highestScorePlayer = seasonPlayerReader.Get(id: highestScore.BotSeasonPlayerId);
 
                 List<BotSeasonScore> highestGpsScores = scores.Where(s => s.HighestGPS).ToList();
-
-                highestGpsScores.ForEach(s =>
-                {
-                    Console.WriteLine("Team: ''" + s.TeamName + "''");
-                });
-                Console.WriteLine("Count: " + highestGpsScores.Count());
-                Console.WriteLine("Winning team: ''" + result.WinningTeam + "''");
-                Console.WriteLine("Losing team: ''" + result.LosingTeam + "''");
 
                 string winningTeamTrim = result.WinningTeam.Trim(' ', '_');
                 string losingTeamTrim = result.LosingTeam.Trim(' ', '_');
@@ -194,8 +191,78 @@ namespace GAFBot.Statistic
                     Color = color,
                 };
 
+                Dictionary<long, List<(double, double)>> playerValues = new Dictionary<long, List<(double, double)>>();
+
+                for (int i = 0; i < scores.Count; i++)
+                {
+                    if (!playerValues.ContainsKey(scores[i].BotSeasonPlayerId))
+                    {
+                        playerValues.Add(scores[i].BotSeasonPlayerId, new List<(double, double)>() { (scores[i].Accuracy, scores[i].GPS) });
+                        continue;
+                    }
+
+                    playerValues[scores[i].BotSeasonPlayerId].Add((scores[i].Accuracy, scores[i].GPS));
+                }
+
+                Dictionary<long, (double, double)> playerAverage = new Dictionary<long, (double, double)>();
+
+                foreach (var pair in playerValues)
+                {
+                    double avgAcc = pair.Value.Sum(s => s.Item1) / pair.Value.Count();
+                    double avgGps = pair.Value.Sum(s => s.Item2) / pair.Value.Count();
+                    playerAverage.Add(pair.Key, (avgAcc, avgGps));
+                }
+
+                var sortedAvgAcc = playerAverage.OrderByDescending(p => p.Value.Item1).ToList();
+                var sortedAvgGps = playerAverage.OrderByDescending(p => p.Value.Item2).ToList();
+
+                KeyValuePair<long, (double, double)> playerTeamAHighestAvgGps = sortedAvgGps.ElementAt(0);
+                BotSeasonPlayer playerTeamAHighestGps = seasonPlayerReader.Get(p => p.Id == playerTeamAHighestAvgGps.Key);
+                KeyValuePair<long, (double, double)> playerTeamBHighestAvgGps = default;
+                BotSeasonPlayer playerTeamBHighestGps = null;
+
+                for (int i = 1; i < sortedAvgGps.Count; i++)
+                {
+                    var pair = sortedAvgGps.ElementAt(i);
+                    var player = seasonPlayerReader.Get(p => p.Id == pair.Key);
+
+                    if (player.TeamId == playerTeamAHighestGps.TeamId)
+                    {
+                        if (playerTeamAHighestAvgGps.Value.Item2 >= pair.Value.Item2)
+                            continue;
+
+                        playerTeamAHighestAvgGps = pair;
+                        playerTeamAHighestGps = player;
+                    }
+                    else
+                    {
+                        if (playerTeamBHighestAvgGps.Equals(default))
+                        {
+                            playerTeamBHighestAvgGps = pair;
+                            playerTeamBHighestGps = player;
+
+                            continue;
+                        }
+
+                        if (playerTeamBHighestAvgGps.Value.Item2 >= pair.Value.Item2)
+                            continue;
+
+                        playerTeamBHighestAvgGps = pair;
+                        playerTeamBHighestGps = player;
+                    }
+                }
+
                 //generated performance score = gps
-                discordEmbedBuilder.AddField(analyzerMVP, $"{result.WinningTeam}: {highestGpsWinningPlayer.LastOsuUserName} ({highestGpsWinningScore.GPS} {analyzerGeneratedPerformanceScore}){Environment.NewLine}{result.LosingTeam}: {highestGpsLosingPlayer.LastOsuUserName} ({highestGpsLosingScore.GPS} {analyzerGeneratedPerformanceScore})");
+                if (playerTeamAHighestGps.TeamId == highestGpsWinningPlayer.TeamId)
+                {
+                    discordEmbedBuilder.AddField(analyzerMVP, $"{result.WinningTeam}: {playerTeamAHighestGps.LastOsuUserName} ({Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})\n" +
+                                                              $"{result.LosingTeam}: {playerTeamBHighestGps.LastOsuUserName} ({Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})");
+                }
+                else
+                {
+                    discordEmbedBuilder.AddField(analyzerMVP, $"{result.WinningTeam}: {playerTeamBHighestGps.LastOsuUserName} ({Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})\n" +
+                                                              $"{result.LosingTeam}: {playerTeamAHighestGps.LastOsuUserName} ({Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})");
+                }
 
                 discordEmbedBuilder.AddField(analyzerHighestScore, string.Format("{0} on the map {1} - {2} [{3}] ({4}*) with {5:n0} Points and {6}% Accuracy!",
                     highestScorePlayer.LastOsuUserName,
@@ -219,27 +286,11 @@ namespace GAFBot.Statistic
                     Math.Round(highestAcc.Accuracy, 2, MidpointRounding.AwayFromZero),
                     analyzerAcc));
 
-                scores = scores.OrderByDescending(s => s.Accuracy).ToList();
-
-                List<long> idsInUse = new List<long>();
-
-                int max = 4;
-                int maxInc = 0;
-                for (int i = 1; i < (max + maxInc); i++)
+                for (int i = 0; i < 4 && i < sortedAvgAcc.Count; i++)
                 {
-                    var score = scores.ElementAt(i - 1);
+                    BotSeasonPlayer player = seasonPlayerReader.Get(p => p.Id == sortedAvgAcc[i].Key);
 
-                    BotSeasonPlayer player = seasonPlayerReader.Get(p => p.Id == score.BotSeasonPlayerId);
-
-                    if (idsInUse.Contains(player.OsuUserId))
-                    {
-                        maxInc++;
-                        continue;
-                    }
-                    else
-                        idsInUse.Add(player.OsuUserId);
-
-                    (string, string) placeString = GetPlaceString(GetAverageAccuracy(player), player, i - maxInc);
+                    (string, string) placeString = GetPlaceString(sortedAvgAcc[i].Value.Item1, player, i + 1);
                     discordEmbedBuilder.AddField(placeString.Item1, placeString.Item2);
                 }
 
@@ -261,9 +312,9 @@ namespace GAFBot.Statistic
                         return (analyzerSecond, $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
                     case 3:
                         return (analyzerThird, $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                    //Normally unused
                     case 4:
                         return ("Fourth Place", $"{player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
+                    //Normally unused
                     default:
                         return ($"{place} Place", $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
                 }
@@ -278,6 +329,10 @@ namespace GAFBot.Statistic
             try
             {
                 List<BotSeasonScore> scores = scoreReader.Where(s => s.BotSeasonPlayerId == player.Id);
+
+                if (scores.Count == 0)
+                    return 0;
+
                 return scores.Sum(s => s.Accuracy) / scores.Count;
             }
             finally
@@ -287,8 +342,23 @@ namespace GAFBot.Statistic
             }
         }
 
-        public static bool UpdateSeasonStatistics(string matchlink, string stage, GAFContext context = null)
+        private static double GetAverageAccuracy(BotSeasonPlayer player, BotSeasonResult result, GAFContext context)
         {
+            BaseDBReader<BotSeasonScore> scoreReader = new BaseDBReader<BotSeasonScore>(context);
+
+            List<BotSeasonScore> scores = scoreReader.Where(s => s.BotSeasonPlayerId == player.Id &&
+                                                                 s.BotSeasonResultId == result.Id);
+
+            if (scores.Count == 0)
+                return 0;
+
+            return scores.Sum(s => s.Accuracy) / scores.Count;
+        }
+
+        public static bool UpdateSeasonStatistics(string matchlink, string stage, GAFContext context)
+        {
+            Logger.Log($"Updating Player Statistics for {matchlink} ({stage})", LogLevel.Trace);
+
             Osu.Analyzer analyzer = new Osu.Analyzer();
             var matchData = analyzer.ParseMatch(matchlink);
 
@@ -298,6 +368,9 @@ namespace GAFBot.Statistic
             };
 
             HistoryJson.History history = new HistoryJson.History();
+
+            if (historyJsons[0] == null || historyJsons[0].Events == null)
+                return false;
 
             var firstEvent = historyJsons[0].Events[0];
             if (firstEvent.Detail == null || !firstEvent.Detail.Type.Equals("match-created"))
@@ -349,6 +422,9 @@ namespace GAFBot.Statistic
 
             bool dispose = context == null;
 
+            if (context == null)
+                context = new GAFContext();
+
             BaseDBReader<BotSeasonResult> seasonResultReader = new BaseDBReader<BotSeasonResult>(context);
             BaseDBReader<BotSeasonBeatmap> seasonBeatmapReader = new BaseDBReader<BotSeasonBeatmap>(context);
             BaseDBReader<Player> playerReader = new BaseDBReader<Player>(context);
@@ -360,8 +436,32 @@ namespace GAFBot.Statistic
 
             try
             {
-                seasonResult = seasonResultReader.Add(seasonResult);
-                seasonResultReader.Save();
+                BotSeasonResult r = seasonResultReader.Get(rr => rr.MatchName.Equals(matchName) && rr.TimeStamp.Equals(seasonResult.TimeStamp));
+
+                if (r == null)
+                {
+                    seasonResult = seasonResultReader.Add(seasonResult);
+                    seasonResultReader.Save();
+                }
+                else
+                {
+                    r.Season = Program.Config.CurrentSeason;
+                    r.Stage = stage;
+                    r.MatchId = matchData.Item2;
+                    r.MatchName = matchName;
+                    r.TimeStamp = history.Events.Last().TimeStamp;
+                    r.LosingTeam = "null";
+                    r.WinningTeam = "null";
+                    r.LosingTeamWins = 0;
+                    r.WinningTeamWins = 0;
+                    r.WinningTeamColor = 0;
+
+                    seasonResult = r;
+
+                    seasonResultReader.Update(seasonResult);
+                    seasonResultReader.Save();
+                }
+
 
                 List<long> osuIdsToUpdate = new List<long>();
 
@@ -421,7 +521,7 @@ namespace GAFBot.Statistic
                     for (int x = 0; x < game.scores.Count; x++)
                     {
                         var score = game.scores[x];
-                        bool ez = game.mods.Contains("ez", StringComparer.CurrentCultureIgnoreCase);
+                        bool ez = game.mods.Contains("ez", StringComparer.CurrentCultureIgnoreCase) || score.mods.Contains("ez", StringComparer.CurrentCultureIgnoreCase);
 
                         if (score.score == 0)
                             continue;
@@ -431,28 +531,24 @@ namespace GAFBot.Statistic
 
                         if (teamVs && !string.IsNullOrEmpty(score.multiplayer.team))
                         {
+                            if (ez || doubleAllScores)
+                            {
+                                if (score.score.HasValue)
+                                {
+                                    Console.WriteLine("Old score: " + score.score);
+                                    SetProperty(score, "score", new int?(score.score.Value * 2));
+                                    Console.WriteLine("New score: " + score.score);
+                                }
+                            }
+
                             switch (score.multiplayer.team)
                             {
                                 case "red":
-                                    if (score.score.HasValue)
-                                    {
-                                        if (ez || doubleAllScores)
-                                            redScore += score.score.Value * 2;
-                                        else
-                                            redScore += score.score.Value;
-                                    }
-
+                                    redScore += score.score.Value;
                                     redTeamOsuUserId = score.user_id ?? 0;
                                     break;
                                 case "blue":
-                                    if (score.score.HasValue)
-                                    {
-                                        if (ez || doubleAllScores)
-                                            blueScore += score.score.Value * 2;
-                                        else
-                                            blueScore += score.score.Value;
-                                    }
-
+                                    blueScore += score.score.Value;
                                     blueTeamOsuUserId = score.user_id ?? 0;
                                     break;
                             }
@@ -557,7 +653,7 @@ namespace GAFBot.Statistic
                         BotSeasonScore score = scores.FirstOrDefault(s => s.BotSeasonPlayerId == gpsPair.Key);
                         score.GPS = gpsPair.Value;
 
-                        Console.WriteLine("GPS: " + score.GPS);
+                        Console.WriteLine($"Season player id: {score.BotSeasonPlayerId} Beatmap id: {score.BeatmapId} GPS: {score.GPS}");
 
                         if (score.TeamVs)
                         {
@@ -644,7 +740,7 @@ namespace GAFBot.Statistic
             finally
             {
                 if (dispose)
-                    context.Dispose();
+                    context?.Dispose();
             }
             return true;
         }
@@ -698,7 +794,9 @@ namespace GAFBot.Statistic
             {
                 //<https://osu.ppy.sh/community/matches/53616778> 
                 //<https://osu.ppy.sh/mp/53616778> 
-                UpdateSeasonStatistics(row, Program.Config.CurrentSeason);
+                using (GAFContext context = new GAFContext())
+                    if (!UpdateSeasonStatistics(row, Program.Config.CurrentSeason, context))
+                        throw new Exception("Could not update statistics for row, probably forfeited");
 
 
                 Osu.Analyzer analyzer = new GAFBot.Osu.Analyzer();
@@ -708,6 +806,9 @@ namespace GAFBot.Statistic
 
                 string[] lineSplit = row.Split(new char[] { '\r', '\n' });
                 lineSplit[0] = lineSplit[0].Replace("d!", "");
+
+                if (matchData.Item2 == -1 && matchData.Item1 == null)
+                    return;
 
                 AnalyzerResult analyzerResult = analyzer.CreateStatistic(matchData.Item1, matchData.Item2);
 
@@ -1087,13 +1188,27 @@ namespace GAFBot.Statistic
             return (teamRed, teamBlue);
         }
 
-        private static void SetProperty(object instance, string propertyName, object newValue)
+        private static void SetProperty(object instance, string propertyName, object newValue, StringComparison nameComparer = StringComparison.CurrentCultureIgnoreCase)
         {
-            Type type = instance.GetType();
+            try
+            {
+                Type instanceType = instance.GetType();
+                PropertyInfo[] properties = instanceType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-            System.Reflection.PropertyInfo prop = type.BaseType.GetProperty(propertyName);
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    if (!properties[i].Name.Equals(propertyName, nameComparer))
+                        continue;
 
-            prop.SetValue(instance, newValue, null);
+                    properties[i].SetValue(instance, newValue);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex.ToString(), LogLevel.ERROR);
+                throw ex;
+            }
         }
 
         private static BotSeasonPlayerCardCache ClearCache(long osuUserId, GAFContext context = null)
@@ -1108,10 +1223,26 @@ namespace GAFBot.Statistic
                 cardCache = cardCacheReader.Get(osuUserId: osuUserId);
 
                 if (cardCache == null)
-                    return new BotSeasonPlayerCardCache()
+                {
+
+                    cardCache = cardCacheReader.Add(new BotSeasonPlayerCardCache()
                     {
-                        OsuUserId = osuUserId
-                    };
+                        OsuUserId = osuUserId,
+                        AverageAccuracy = 0,
+                        AverageCombo = 0,
+                        AverageMisses = 0,
+                        AveragePerformance = 0,
+                        AverageScore = 0,
+                        LastUpdated = DateTime.UtcNow,
+                        MatchMvps = 0,
+                        OverallRating = 0,
+                        TeamName = "null",
+                        Username = "null",
+                    });
+
+                    cardCacheReader.Save();
+                    return cardCache;
+                }
 
                 cardCache.AverageAccuracy = 0;
                 cardCache.AverageCombo = 0;
@@ -1124,7 +1255,7 @@ namespace GAFBot.Statistic
                 cardCache.TeamName = "null";
                 cardCache.Username = "null";
 
-                cardCacheReader.Update(cardCache);
+                cardCache = cardCacheReader.Update(cardCache);
                 cardCacheReader.Save();
             }
             finally
@@ -1187,6 +1318,7 @@ namespace GAFBot.Statistic
 
                 cardCache.Username = player.LastOsuUserName ?? "not found";
 
+                cardCacheReader.Update(cardCache);
                 cardCacheReader.Save();
             }
             finally
@@ -1203,11 +1335,12 @@ namespace GAFBot.Statistic
 
             bool dispose = context == null;
             SeasonPlayerCardCacheReader cardCacheReader = new SeasonPlayerCardCacheReader(context);
+            SeasonPlayerReader playerReader = new SeasonPlayerReader(context);
 
             try
             {
-                foreach (var cc in cardCacheReader.GetSet())
-                    userIds.Add(cc.OsuUserId);
+                foreach (var p in playerReader.GetSet())
+                    userIds.Add(p.OsuUserId);
 
                 var dmessage = dchannel.SendMessageAsync("Updating cached card 0/" + userIds.Count).Result;
                 for (int i = 0; i < userIds.Count; i++)
