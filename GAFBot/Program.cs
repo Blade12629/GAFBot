@@ -176,7 +176,7 @@ namespace GAFBot
                 {
                     Logger.Log(ex.ToString(), LogLevel.ERROR);
                 }
-                catch (Exception ex2)
+                catch (Exception)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine(ex.ToString());
@@ -376,7 +376,9 @@ namespace GAFBot
                 FileInfo sqlFile = new FileInfo(Path.Combine(CurrentPath, "Install/db.sql"));
 
                 List<string> sql = File.ReadAllLines(sqlFile.FullName).Where(l => !string.IsNullOrEmpty(l)).ToList();
-                
+                AsciiLoadingBar asciiLoadingBar = new AsciiLoadingBar(250, sql.Count, 0, "Installing SQL");
+                asciiLoadingBar.Enable();
+
                 using (Database.GAFContext context = new Database.GAFContext())
                 {
                     for (int i = 0; i < sql.Count; i++)
@@ -386,12 +388,25 @@ namespace GAFBot
                         if (string.IsNullOrEmpty(line))
                             continue;
                         
-                        context.Database.ExecuteSqlRaw(line);
-                        Console.WriteLine($"{i + 1}/{sql.Count}");
+                        try
+                        {
+                            context.Database.ExecuteSqlRaw(line);
+                        }
+                        catch (Exception ex)
+                        {
+                            asciiLoadingBar.Disable();
+                            Console.WriteLine(line);
+                            throw ex;
+                        }
+
+                        asciiLoadingBar.Increment();
+                        //asciiLoadingBar.RefreshManually();
                     }
                     
                     context.SaveChanges();
                 }
+                asciiLoadingBar.RefreshManually();
+                asciiLoadingBar.Disable();
             }
 
             void InstallConfig()
@@ -499,9 +514,12 @@ namespace GAFBot
             Logger.Log("Program: Discord client initialized");
         }
 
-        [AutoInit(2)]
+        //[AutoInit(2)]
         public static void LoadApi()
         {
+            Logger.Log("Test Exception", LogLevel.ERROR);
+            Logger.Log("Test Warning", LogLevel.WARNING);
+
             string host = Config.WebsiteHost;
 
             if (string.IsNullOrEmpty(host))
@@ -643,7 +661,6 @@ namespace GAFBot
         }
 
         #endregion
-
 
         #region encryption
         private static byte[] _encK;

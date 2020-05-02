@@ -18,13 +18,10 @@ namespace GAFBot.Commands
 
         public string Description => "Gets info about the current tourney session";
 
-        /// <summary>
-        /// 
-        /// </summary>
         public string DescriptionUsage => "!session p osuUserId" + Environment.NewLine +
-                                          "!session profile osuUserId" + Environment.NewLine /*+*/
-                                          //"!session top10" + Environment.NewLine +
-                                          /*"!session top pageX" + Environment.NewLine*/;
+                                          "!session profile osuUserId" + Environment.NewLine +
+                                          "!session top 10" + Environment.NewLine +
+                                          "!session top pageX" + Environment.NewLine;
 
         public static void Init()
         {
@@ -32,15 +29,6 @@ namespace GAFBot.Commands
             Logger.Log(nameof(SessionCommand) + " Registered");
         }
 
-        /*
-         * ToDo:
-         * remove qualifier tables
-         * merge tables together
-         * store gps for player in extra table called bot_analyzer_gps
-         * create cache for player cards called bot_player_cards
-         * update cache only when new result comes in
-         * check if mplink has more than 100 events if yes merge them
-         */
         public void Activate(CommandEventArg e)
         {
             if (string.IsNullOrEmpty(e.AfterCMD))
@@ -104,7 +92,7 @@ namespace GAFBot.Commands
                             break;
                     }
 
-                    list += Environment.NewLine + $"{placeString} {cc.Username} (id: {cc.OsuUserId}) Rating: {cc.OverallRating}";
+                    list += Environment.NewLine + $"{placeString} ID: {cc.OsuUserId} | User: {cc.Username} | Rating: {cc.OverallRating}";
                 }
 
                 list = list.TrimStart(Environment.NewLine.ToCharArray());
@@ -186,54 +174,6 @@ namespace GAFBot.Commands
             DiscordEmbed statistics = Statistic.StatsHandler.GetPlayerStatistics(userId);
 
             Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: statistics).Wait();
-
-            //List<BotAnalyzerRank> ranks = new List<BotAnalyzerRank>();
-            //List<BotAnalyzerScore> scores = new List<BotAnalyzerScore>();
-            //Player player;
-            //using (GAFContext context = new GAFContext())
-            //{
-            //    ranks.AddRange(context.BotAnalyzerRank.Where(r => r.PlayerOsuId == userId));
-            //    scores.AddRange(context.BotAnalyzerScore.Where(s => s.UserId == userId));
-            //    player = context.Player.FirstOrDefault(p => p.OsuId == userId);
-            //}
-
-            //PlayerCard pc = new PlayerCard();
-
-            //foreach(BotAnalyzerScore score in scores)
-            //{
-            //    pc.AverageAccuracy += 100.0 * score.Accuracy;
-            //    pc.AverageScore += score.Score;
-            //    pc.AverageCombo += score.MaxCombo;
-            //    pc.AverageMisses += score.CountMiss;
-
-            //    BotAnalyzerRank rank = ranks.FirstOrDefault(r => r.MatchId == score.MatchId && r.PlayerOsuId == score.UserId);
-
-            //    if (rank == null)
-            //    {
-
-            //        continue;
-            //    }
-
-            //    pc.AverageGPS += rank.MvpScore;
-            //}
-
-            //pc.AverageGPS /= scores.Count;
-            //pc.AverageAccuracy /= scores.Count;
-            //pc.AverageScore /= scores.Count;
-            //pc.AverageCombo /= scores.Count;
-            //pc.AverageMisses /= scores.Count;
-
-            //if (player != null)
-            //{
-            //    pc.Username = player.Nickname;
-            //    pc.CountryCode = player.Country;
-            //}
-
-            //pc.UserId = userId;
-            //pc.AvatarUrl = "https://a.ppy.sh/" + userId;
-            //pc.PlayCount = scores.Count;
-
-            //Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: Build(pc)).Wait();
         }
 
         private DiscordEmbed Build(PlayerCard pc)
@@ -275,19 +215,26 @@ namespace GAFBot.Commands
             public string CountryCode;
             public int PlayCount;
             public string AvatarUrl;
-        }
-    }
 
-    public static class SessionCommandExtension
-    {
-        public static List<T> GetRange<T>(this List<T> input, int start, int count)
-        {
-            List<T> result = new List<T>();
+            public PlayerCard()
+            {
+            }
 
-            for (int i = start; i < input.Count && i <= start + count; i++)
-                result.Add(input[i]);
-
-            return result;
+            public PlayerCard(double averageAccuracy, double averageMisses, double averageScore, double averageCombo, double averageGPS, 
+                              double overallRating, string username, long userId, string countryCode, int playCount, string avatarUrl)
+            {
+                AverageAccuracy = averageAccuracy;
+                AverageMisses = averageMisses;
+                AverageScore = averageScore;
+                AverageCombo = averageCombo;
+                AverageGPS = averageGPS;
+                OverallRating = overallRating;
+                Username = username;
+                UserId = userId;
+                CountryCode = countryCode;
+                PlayCount = playCount;
+                AvatarUrl = avatarUrl;
+            }
         }
     }
 }

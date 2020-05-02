@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if GAF
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,3 +14,4 @@ namespace GAFBot.Database.Models
         public long? MedianPP { get; set; }
     }
 }
+#endif

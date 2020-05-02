@@ -66,36 +66,31 @@ namespace GAFBot.Commands
 
                 IMessageHandler messageHandler = Modules.ModuleHandler.Get("message") as IMessageHandler;
 
-                if (qualifierStage)
-                    messageHandler.StartQualifierAnalyzer(parameters, e.ChannelID, db);
-                else
+                const string historyUrl = "https://osu.ppy.sh/community/matches/";
+                const string historyUrlVariant = "https://osu.ppy.sh/mp/";
+
+                if (parameters.Contains(historyUrlVariant))
+                    parameters = parameters.Replace(historyUrlVariant, historyUrl);
+
+                string matchIdString = parameters.Remove(0, historyUrl.Length).Trim('>', '<').Trim('/');
+
+                if (!int.TryParse(matchIdString, out int matchId))
                 {
-                    const string historyUrl = "https://osu.ppy.sh/community/matches/";
-                    const string historyUrlVariant = "https://osu.ppy.sh/mp/";
+                    Coding.Discord.SendMessage(e.ChannelID, "Could not parse matchid: " + matchIdString);
 
-                    if (parameters.Contains(historyUrlVariant))
-                        parameters = parameters.Replace(historyUrlVariant, historyUrl);
+                    return;
+                }
 
-                    string matchIdString = parameters.Remove(0, historyUrl.Length).Trim('>', '<').Trim('/');
 
-                    if (!int.TryParse(matchIdString, out int matchId))
+                using (GAFContext context = new GAFContext())
+                {
+                    if (Statistic.StatsHandler.UpdateSeasonStatistics(parameters.Trim('>', '<'), Program.Config.CurrentSeason, context))
                     {
-                        Coding.Discord.SendMessage(e.ChannelID, "Could not parse matchid: " + matchIdString);
-
-                        return;
+                        var matchEmbed = Statistic.StatsHandler.GetMatchResultEmbed(matchId, context);
+                        Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: matchEmbed);
                     }
-
-
-                    using (GAFContext context = new GAFContext())
-                    {
-                        if (Statistic.StatsHandler.UpdateSeasonStatistics(parameters.Trim('>', '<'), Program.Config.CurrentSeason, context))
-                        {
-                            var matchEmbed = Statistic.StatsHandler.GetMatchResultEmbed(matchId, context);
-                            Coding.Discord.GetChannel(e.ChannelID).SendMessageAsync(embed: matchEmbed);
-                        }
-                        else
-                            Coding.Discord.SendMessage(e.ChannelID, "Failed");
-                    }
+                    else
+                        Coding.Discord.SendMessage(e.ChannelID, "Failed");
                 }
             }
             catch (Exception ex)

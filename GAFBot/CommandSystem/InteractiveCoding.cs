@@ -265,11 +265,17 @@ namespace GAFBot
             public static DSharpPlus.DiscordClient GetClient()
                 => Program.Client;
 
+            public static DSharpPlus.Entities.DiscordMessage GetMessage(ulong channel, ulong message)
+                => GetChannel(channel).GetMessageAsync(message).Result;
+
             public static DSharpPlus.Entities.DiscordGuild GetGuild(ulong id)
                 => GetClient().Guilds.ToList().Find(p => p.Key == id).Value;
 
             public static DSharpPlus.Entities.DiscordMessage SendMessage(ulong channelID, string message)
                 => Program.Client.SendMessageAsync(GetChannel(channelID), message).Result;
+
+            public static DSharpPlus.Entities.DiscordMessage SendEmbed(ulong channelID, DSharpPlus.Entities.DiscordEmbed embed, string content = null)
+                => GetChannel(channelID).SendMessageAsync(content: content, embed: embed).Result;
 
             public static DSharpPlus.Entities.DiscordMessage SendPrivateMessage(ulong userID, string message)
                 => GetPrivChannel(userID)?.SendMessageAsync(message).Result;

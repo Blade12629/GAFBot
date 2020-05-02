@@ -7,7 +7,7 @@ using System;
 using DSharpPlus.Entities;
 using GAFBot.Database;
 using GAFBot.Database.Models;
-using DBPlayer = GAFBot.Database.Models.Player;
+//using DBPlayer = GAFBot.Database.Models.Player;
 
 namespace GAFBot.Osu
 {
@@ -18,98 +18,100 @@ namespace GAFBot.Osu
         private const float _missesMulti = 0.1f;
         private const float _comboMulti = 1.0f;
         private const float _300Multi = 1.0f;
-        
-        public AnalyzerQualifierResult CreateQualifierStatistics(HistoryJson.History history, int matchId)
-        {
-            AnalyzerQualifierResult result = null;
-            string matchName = history.Events.FirstOrDefault(ob => ob.Detail.Type == "other").Detail.MatchName;
-            HistoryJson.Game[] games = GetData.GetMatches(history);
-            //beatmapid, score
-            List<QualifierTeam> teams = new List<QualifierTeam>();
 
-            List<Team> dbTeams = new List<Team>();
-            List<DBPlayer> dbPlayers = new List<DBPlayer>();
-            List<TeamPlayerList> dbTeamPlayerList = new List<TeamPlayerList>();
+        #region oldQualifierAnalyzer
+        //public AnalyzerQualifierResult CreateQualifierStatistics(HistoryJson.History history, int matchId)
+        //{
+        //    AnalyzerQualifierResult result = null;
+        //    string matchName = history.Events.FirstOrDefault(ob => ob.Detail.Type == "other").Detail.MatchName;
+        //    HistoryJson.Game[] games = GetData.GetMatches(history);
+        //    //beatmapid, score
+        //    List<QualifierTeam> teams = new List<QualifierTeam>();
 
-            using (GAFContext context = new GAFContext())
-            {
-                foreach (var game in games)
-                {
-                    foreach (var score in game.scores)
-                    {
-                        if (!score.user_id.HasValue)
-                            continue;
-                        
-                        DBPlayer dbPlayer = dbPlayers.FirstOrDefault(p => p.OsuId.Value == score.user_id.Value);
+        //    //List<Team> dbTeams = new List<Team>();
+        //    //List<DBPlayer> dbPlayers = new List<DBPlayer>();
+        //    //List<TeamPlayerList> dbTeamPlayerList = new List<TeamPlayerList>();
 
-                        if (dbPlayer == null)
-                        {
-                            dbPlayer = context.Player.FirstOrDefault(p => p.OsuId.HasValue && p.OsuId.Value == score.user_id.Value);
-                            dbPlayers.Add(dbPlayer);
-                        }
+        //    using (GAFContext context = new GAFContext())
+        //    {
+        //        foreach (var game in games)
+        //        {
+        //            foreach (var score in game.scores)
+        //            {
+        //                if (!score.user_id.HasValue)
+        //                    continue;
 
-                        TeamPlayerList dbTeamPlayer = dbTeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.Value == dbPlayer.Id);
-                        
-                        if (dbTeamPlayer == null)
-                        {
-                            dbTeamPlayer = context.TeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.HasValue && tp.PlayerListId.Value == dbPlayer.Id);
+        //                DBPlayer dbPlayer = dbPlayers.FirstOrDefault(p => p.OsuId.Value == score.user_id.Value);
 
-                            dbTeamPlayerList.Add(dbTeamPlayer);
-                        }
-                        
-                        Team dbTeam = dbTeams.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId);
+        //                if (dbPlayer == null)
+        //                {
+        //                    dbPlayer = context.Player.FirstOrDefault(p => p.OsuId.HasValue && p.OsuId.Value == score.user_id.Value);
+        //                    dbPlayers.Add(dbPlayer);
+        //                }
 
-                        if (dbTeam == null)
-                        {
-                            dbTeam = context.Team.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId.Value);
-                            dbTeams.Add(dbTeam);
-                        }
-                        
-                        QualifierTeam team = teams.FirstOrDefault(t => t.TeamName.Equals(dbTeam.Name));
+        //                TeamPlayerList dbTeamPlayer = dbTeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.Value == dbPlayer.Id);
 
-                        if (team == null)
-                        {
-                            team = new QualifierTeam(dbTeam.Name, new QualifierPlayer[]
-                            {
-                                new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
-                                {
-                                    (game.beatmap.id.Value, score)
-                                })
-                            });
+        //                if (dbTeamPlayer == null)
+        //                {
+        //                    dbTeamPlayer = context.TeamPlayerList.FirstOrDefault(tp => tp.PlayerListId.HasValue && tp.PlayerListId.Value == dbPlayer.Id);
 
-                            teams.Add(team);
-                        }
-                        else
-                        {
-                            QualifierPlayer player = team.Players.FirstOrDefault(p => p.UserId == dbPlayer.OsuId.Value);
+        //                    dbTeamPlayerList.Add(dbTeamPlayer);
+        //                }
 
-                            if (player == null)
-                            {
-                                List<QualifierPlayer> players = team.Players.ToList();
-                                players.Add(new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
-                                {
-                                    (game.beatmap.id.Value, score)
-                                }));
+        //                Team dbTeam = dbTeams.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId);
 
-                                team.Players = players.ToArray();
-                            }
-                            else
-                            {
-                                List<(long, HistoryJson.Score)> scores = player.Scores.ToList();
-                                scores.Add((game.beatmap.id.Value, score));
+        //                if (dbTeam == null)
+        //                {
+        //                    dbTeam = context.Team.FirstOrDefault(t => t.Id == dbTeamPlayer.TeamId.Value);
+        //                    dbTeams.Add(dbTeam);
+        //                }
 
-                                player.Scores = scores.ToArray();
-                            }
-                        }
-                    }
-                }
-            }
+        //                QualifierTeam team = teams.FirstOrDefault(t => t.TeamName.Equals(dbTeam.Name));
 
-            result = new AnalyzerQualifierResult(matchId, "stage", matchName, teams.ToArray());
-            result.TimeStamp = history.Events.Last().TimeStamp;
+        //                if (team == null)
+        //                {
+        //                    team = new QualifierTeam(dbTeam.Name, new QualifierPlayer[]
+        //                    {
+        //                        new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
+        //                        {
+        //                            (game.beatmap.id.Value, score)
+        //                        })
+        //                    });
 
-            return result;
-        }
+        //                    teams.Add(team);
+        //                }
+        //                else
+        //                {
+        //                    QualifierPlayer player = team.Players.FirstOrDefault(p => p.UserId == dbPlayer.OsuId.Value);
+
+        //                    if (player == null)
+        //                    {
+        //                        List<QualifierPlayer> players = team.Players.ToList();
+        //                        players.Add(new QualifierPlayer(dbPlayer.OsuId.Value, dbPlayer.Nickname, new (long, HistoryJson.Score)[]
+        //                        {
+        //                            (game.beatmap.id.Value, score)
+        //                        }));
+
+        //                        team.Players = players.ToArray();
+        //                    }
+        //                    else
+        //                    {
+        //                        List<(long, HistoryJson.Score)> scores = player.Scores.ToList();
+        //                        scores.Add((game.beatmap.id.Value, score));
+
+        //                        player.Scores = scores.ToArray();
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    result = new AnalyzerQualifierResult(matchId, "stage", matchName, teams.ToArray());
+        //    result.TimeStamp = history.Events.Last().TimeStamp;
+
+        //    return result;
+        //}
+        #endregion
 
         /// <summary>
         /// Creates a statistic for a osu mp match

@@ -22,14 +22,10 @@ namespace GAFBot.Statistic
             bool dispose = context == null;
 
             BotSeasonPlayerCardCache cardCache;
-            Player player;
             try
             {
                 SeasonPlayerCardCacheReader cardCacheReader = new SeasonPlayerCardCacheReader(context);
-                BaseDBReader<Player> playerReader = new BaseDBReader<Player>(context);
-
                 cardCache = cardCacheReader.Get(cc => cc.OsuUserId == osuUserId);
-                player = playerReader.Get(p => p.OsuId == osuUserId);
             }
             finally
             {
@@ -65,8 +61,8 @@ namespace GAFBot.Statistic
                 }
             };
 
-            if (player != null)
-                builder.Author.IconUrl = $"https://osu.ppy.sh/images/flags/{player.Country}.png";
+            //if (player != null)
+            //    builder.Author.IconUrl = $"https://osu.ppy.sh/images/flags/{player.Country}.png";
 
             builder.AddField("Average Accuracy", Math.Round(cardCache.AverageAccuracy / 100.0, 2, MidpointRounding.AwayFromZero).ToString() + " %", true);
             int score = (int)cardCache.AverageScore;
@@ -82,6 +78,14 @@ namespace GAFBot.Statistic
 
         public static DiscordEmbed GetMatchResultEmbed(long matchId, GAFContext context)
         {
+            Func<int, bool> intToBool = new Func<int, bool>(i =>
+            {
+                if (i == 0)
+                    return false;
+
+                return true;
+            });
+
             Logger.Log("Getting Match Result Embed", LogLevel.Trace);
 
             bool dispose = context == null;
@@ -191,42 +195,58 @@ namespace GAFBot.Statistic
                     Color = color,
                 };
 
-                Dictionary<long, List<(double, double)>> playerValues = new Dictionary<long, List<(double, double)>>();
+                Dictionary<long, List<(double, double, double)>> playerValues = new Dictionary<long, List<(double, double, double)>>();
 
                 for (int i = 0; i < scores.Count; i++)
                 {
                     if (!playerValues.ContainsKey(scores[i].BotSeasonPlayerId))
                     {
-                        playerValues.Add(scores[i].BotSeasonPlayerId, new List<(double, double)>() { (scores[i].Accuracy, scores[i].GPS) });
+                        playerValues.Add(scores[i].BotSeasonPlayerId, new List<(double, double, double)>() { (scores[i].Accuracy, scores[i].GPS, scores[i].Score) });
                         continue;
                     }
 
-                    playerValues[scores[i].BotSeasonPlayerId].Add((scores[i].Accuracy, scores[i].GPS));
+                    playerValues[scores[i].BotSeasonPlayerId].Add((scores[i].Accuracy, scores[i].GPS, scores[i].Score));
                 }
 
-                Dictionary<long, (double, double)> playerAverage = new Dictionary<long, (double, double)>();
+                Dictionary<long, (double, double, double)> playerAverage = new Dictionary<long, (double, double, double)>();
 
                 foreach (var pair in playerValues)
                 {
                     double avgAcc = pair.Value.Sum(s => s.Item1) / pair.Value.Count();
                     double avgGps = pair.Value.Sum(s => s.Item2) / pair.Value.Count();
-                    playerAverage.Add(pair.Key, (avgAcc, avgGps));
+                    double avgScore = pair.Value.Sum(s => s.Item3) / pair.Value.Count();
+
+                    playerAverage.Add(pair.Key, (avgAcc, avgGps, avgScore));
                 }
 
                 var sortedAvgAcc = playerAverage.OrderByDescending(p => p.Value.Item1).ToList();
                 var sortedAvgGps = playerAverage.OrderByDescending(p => p.Value.Item2).ToList();
+                var sortedAvgScore = playerAverage.OrderByDescending(p => p.Value.Item3).ToList();
 
-                KeyValuePair<long, (double, double)> playerTeamAHighestAvgGps = sortedAvgGps.ElementAt(0);
+
+                KeyValuePair<long, (double, double, double)> playerTeamAHighestAvgGps = sortedAvgGps.ElementAt(0);
                 BotSeasonPlayer playerTeamAHighestGps = seasonPlayerReader.Get(p => p.Id == playerTeamAHighestAvgGps.Key);
-                KeyValuePair<long, (double, double)> playerTeamBHighestAvgGps = default;
+                KeyValuePair<long, (double, double, double)> playerTeamBHighestAvgGps = default;
                 BotSeasonPlayer playerTeamBHighestGps = null;
+
+                KeyValuePair<long, (double, double, double)> playerTeamAHighestAvgAcc = sortedAvgAcc.ElementAt(0);
+                BotSeasonPlayer playerTeamAHighestAcc = seasonPlayerReader.Get(p => p.Id == playerTeamAHighestAvgAcc.Key);
+                KeyValuePair<long, (double, double, double)> playerTeamBHighestAvgAcc = default;
+                BotSeasonPlayer playerTeamBHighestAcc = null;
+
+                KeyValuePair<long, (double, double, double)> playerTeamAHighestAvgScore = sortedAvgScore.ElementAt(0);
+                BotSeasonPlayer playerTeamAHighestScore = seasonPlayerReader.Get(p => p.Id == playerTeamAHighestAvgScore.Key);
+                KeyValuePair<long, (double, double, double)> playerTeamBHighestAvgScore = default;
+                BotSeasonPlayer playerTeamBHighestScore = null;
 
                 for (int i = 1; i < sortedAvgGps.Count; i++)
                 {
                     var pair = sortedAvgGps.ElementAt(i);
                     var player = seasonPlayerReader.Get(p => p.Id == pair.Key);
 
-                    if (player.TeamId == playerTeamAHighestGps.TeamId)
+                    Console.WriteLine(sortedAvgGps[i].Value.Item1 + " | " + sortedAvgGps[i].Value.Item2 + " | " + sortedAvgGps[i].Value.Item3 + " | ");
+
+                    if (player.TeamName.Equals(playerTeamAHighestGps.TeamName, StringComparison.CurrentCultureIgnoreCase))
                     {
                         if (playerTeamAHighestAvgGps.Value.Item2 >= pair.Value.Item2)
                             continue;
@@ -252,26 +272,67 @@ namespace GAFBot.Statistic
                     }
                 }
 
-                //generated performance score = gps
-                if (playerTeamAHighestGps.TeamId == highestGpsWinningPlayer.TeamId)
+                for (int i = 1; i < sortedAvgScore.Count; i++)
                 {
-                    discordEmbedBuilder.AddField(analyzerMVP, $"{result.WinningTeam}: {playerTeamAHighestGps.LastOsuUserName} ({Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})\n" +
-                                                              $"{result.LosingTeam}: {playerTeamBHighestGps.LastOsuUserName} ({Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})");
-                }
-                else
-                {
-                    discordEmbedBuilder.AddField(analyzerMVP, $"{result.WinningTeam}: {playerTeamBHighestGps.LastOsuUserName} ({Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})\n" +
-                                                              $"{result.LosingTeam}: {playerTeamAHighestGps.LastOsuUserName} ({Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore})");
+                    var pair = sortedAvgGps.ElementAt(i);
+                    var player = seasonPlayerReader.Get(p => p.Id == pair.Key);
+
+                    if (player.TeamName.Equals(playerTeamAHighestScore.TeamName, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        if (playerTeamAHighestAvgScore.Value.Item3 >= pair.Value.Item3)
+                            continue;
+
+                        playerTeamAHighestAvgScore = pair;
+                        playerTeamAHighestScore = player;
+                    }
+                    else
+                    {
+                        if (playerTeamBHighestAvgScore.Equals(default))
+                        {
+                            playerTeamBHighestAvgScore = pair;
+                            playerTeamBHighestScore = player;
+
+                            continue;
+                        }
+
+                        if (playerTeamBHighestAvgScore.Value.Item3 >= pair.Value.Item3)
+                            continue;
+
+                        playerTeamBHighestAvgScore = pair;
+                        playerTeamBHighestScore = player;
+                    }
                 }
 
-                discordEmbedBuilder.AddField(analyzerHighestScore, string.Format("{0} on the map {1} - {2} [{3}] ({4}*) with {5:n0} Points and {6}% Accuracy!",
-                    highestScorePlayer.LastOsuUserName,
-                    highestScoreMap.Author,
-                    highestScoreMap.Title,
-                    highestScoreMap.Difficulty,
-                    highestScoreMap.DifficultyRating,
-                    string.Format("{0:n0}", highestScore.Score),
-                    Math.Round(highestScore.Accuracy, 2, MidpointRounding.AwayFromZero)));
+                for (int i = 1; i < sortedAvgAcc.Count; i++)
+                {
+                    var pair = sortedAvgGps.ElementAt(i);
+                    var player = seasonPlayerReader.Get(p => p.Id == pair.Key);
+
+                    if (player.TeamName.Equals(playerTeamAHighestAcc.TeamName, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        if (playerTeamAHighestAvgAcc.Value.Item1 >= pair.Value.Item1)
+                            continue;
+
+                        playerTeamAHighestAvgAcc = pair;
+                        playerTeamAHighestAcc = player;
+                    }
+                    else
+                    {
+                        if (playerTeamBHighestAvgAcc.Equals(default))
+                        {
+                            playerTeamBHighestAvgAcc = pair;
+                            playerTeamBHighestAcc = player;
+
+                            continue;
+                        }
+
+                        if (playerTeamBHighestAvgAcc.Value.Item1 >= pair.Value.Item1)
+                            continue;
+
+                        playerTeamBHighestAvgAcc = pair;
+                        playerTeamBHighestAcc = player;
+                    }
+                }
 
                 discordEmbedBuilder.AddField(analyzerHighestAcc, string.Format("{0} {1} {2} - {3} [{4}] ({5}*) {6} {7:n0} {8} {9}% {10}!",
                     highestAccPlayer.LastOsuUserName,
@@ -286,38 +347,56 @@ namespace GAFBot.Statistic
                     Math.Round(highestAcc.Accuracy, 2, MidpointRounding.AwayFromZero),
                     analyzerAcc));
 
-                for (int i = 0; i < 4 && i < sortedAvgAcc.Count; i++)
-                {
-                    BotSeasonPlayer player = seasonPlayerReader.Get(p => p.Id == sortedAvgAcc[i].Key);
+                discordEmbedBuilder.AddField("——————————————————", result.WinningTeam, true);
+                discordEmbedBuilder.AddField("——————————————————", result.LosingTeam, true);
 
-                    (string, string) placeString = GetPlaceString(sortedAvgAcc[i].Value.Item1, player, i + 1);
-                    discordEmbedBuilder.AddField(placeString.Item1, placeString.Item2);
+
+                discordEmbedBuilder.AddField(".", "Most Valuable Player");
+
+                if (playerTeamAHighestGps.TeamName.Equals(highestGpsWinningPlayer.TeamName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestGps.LastOsuUserName}: {Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore}", ".", true);
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestGps.LastOsuUserName}: {Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore}", ".", true);
+                }
+                else
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestGps.LastOsuUserName}: {Math.Round(playerTeamBHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore}", ".", true);
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestGps.LastOsuUserName}: {Math.Round(playerTeamAHighestAvgGps.Value.Item2, 2, MidpointRounding.AwayFromZero)} {analyzerGeneratedPerformanceScore}", ".", true);
+                }
+
+                discordEmbedBuilder.AddField(".", "Highest Average Score");
+
+                if (playerTeamAHighestScore.TeamName.Equals(highestGpsWinningPlayer.TeamName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestScore.LastOsuUserName}: {string.Format("{0:n0}", (int)playerTeamAHighestAvgScore.Value.Item3)} Score", ".", true);
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestScore.LastOsuUserName}: {string.Format("{0:n0}", (int)playerTeamBHighestAvgScore.Value.Item3)} Score", ".", true);
+                }
+                else
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestScore.LastOsuUserName}: {string.Format("{0:n0}", (int)playerTeamBHighestAvgScore.Value.Item3)} Score", ".", true);
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestScore.LastOsuUserName}: {string.Format("{0:n0}", (int)playerTeamAHighestAvgScore.Value.Item3)} Score", ".", true);
+                }
+
+                discordEmbedBuilder.AddField(".", "Highest Average Accuracy");
+
+                if (playerTeamAHighestAcc.TeamName.Equals(highestGpsWinningPlayer.TeamName, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestAcc.LastOsuUserName}: {Math.Round(playerTeamAHighestAvgAcc.Value.Item1, 2, MidpointRounding.AwayFromZero)} %", "——————————————————", true);
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestAcc.LastOsuUserName}: {Math.Round(playerTeamBHighestAvgAcc.Value.Item1, 2, MidpointRounding.AwayFromZero)} %", "——————————————————", true);
+                }
+                else
+                {
+                    discordEmbedBuilder.AddField($"{playerTeamBHighestAcc.LastOsuUserName}: {Math.Round(playerTeamBHighestAvgAcc.Value.Item1, 2, MidpointRounding.AwayFromZero)} %", "——————————————————", true);
+                    discordEmbedBuilder.AddField($"{playerTeamAHighestAcc.LastOsuUserName}: {Math.Round(playerTeamAHighestAvgAcc.Value.Item1, 2, MidpointRounding.AwayFromZero)} %", "——————————————————", true);
                 }
 
                 return discordEmbedBuilder.Build();
+
             }
             finally
             {
                 if (dispose)
                     context.Dispose();
-            }
-
-            (string, string) GetPlaceString(double averageAcc, BotSeasonPlayer player_, int place)
-            {
-                switch (place)
-                {
-                    case 1:
-                        return (analyzerFirst, $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                    case 2:
-                        return (analyzerSecond, $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                    case 3:
-                        return (analyzerThird, $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                    case 4:
-                        return ("Fourth Place", $"{player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                    //Normally unused
-                    default:
-                        return ($"{place} Place", $"{ player_.LastOsuUserName}: {analyzerAverageAcc}: { Math.Round(averageAcc, 2, MidpointRounding.AwayFromZero) }%");
-                }
             }
         }
 
@@ -427,9 +506,6 @@ namespace GAFBot.Statistic
 
             BaseDBReader<BotSeasonResult> seasonResultReader = new BaseDBReader<BotSeasonResult>(context);
             BaseDBReader<BotSeasonBeatmap> seasonBeatmapReader = new BaseDBReader<BotSeasonBeatmap>(context);
-            BaseDBReader<Player> playerReader = new BaseDBReader<Player>(context);
-            BaseDBReader<TeamPlayerList> tplReader = new BaseDBReader<TeamPlayerList>(context);
-            BaseDBReader<Team> teamReader = new BaseDBReader<Team>(context);
             BaseDBReader<BotSeasonScore> seasonScoreReader = new BaseDBReader<BotSeasonScore>(context);
             BaseDBReader<BotSeasonBeatmapMod> seasonBeatmapModReader = new BaseDBReader<BotSeasonBeatmapMod>(context);
             SeasonPlayerReader seasonPlayerReader = new SeasonPlayerReader(context);
@@ -461,6 +537,17 @@ namespace GAFBot.Statistic
                     seasonResultReader.Update(seasonResult);
                     seasonResultReader.Save();
                 }
+
+                int indexTN = matchName.IndexOf('(');
+                string teamA = matchName.Remove(0, indexTN + 1);
+
+                indexTN = teamA.IndexOf(')');
+                teamA = teamA.Substring(0, indexTN);
+
+                string teamB = teamA.Remove(0, indexTN + 6);
+
+                indexTN = teamB.IndexOf(')');
+                teamB = teamB.Substring(0, indexTN);
 
 
                 List<long> osuIdsToUpdate = new List<long>();
@@ -555,30 +642,43 @@ namespace GAFBot.Statistic
                         }
 
                         BotSeasonPlayer player = seasonPlayerReader.Get(p => p.OsuUserId == score.user_id.Value);
-                        Team t;
 
                         //Add player if doesn't exist
                         if (player == null)
                         {
-                            Player pl_ = playerReader.Get(p => p.OsuId == score.user_id.Value);
-                            TeamPlayerList tpl_ = tplReader.Get(p => p.PlayerListId == pl_.Id);
-                            t = teamReader.Get(te => te.Id == tpl_.TeamId);
-
                             player = new BotSeasonPlayer()
                             {
                                 LastOsuUserName = history.Users.FirstOrDefault(u => u.UserId == score.user_id.Value).Username,
                                 OsuUserId = score.user_id ?? 0,
-                                TeamId = tpl_.TeamId ?? 0
                             };
+
+                            if (score.multiplayer.team.Equals("blue", StringComparison.CurrentCultureIgnoreCase))
+                                player.TeamName = teamA;
+                            else
+                                player.TeamName = teamB;
 
                             player = seasonPlayerReader.Add(player);
                             seasonPlayerReader.Save();
                         }
                         else
                         {
-                            Player pl_ = playerReader.Get(p => p.OsuId == score.user_id.Value);
-                            TeamPlayerList tpl_ = tplReader.Get(p => p.PlayerListId == pl_.Id);
-                            t = teamReader.Get(te => te.Id == tpl_.TeamId);
+                            if (score.multiplayer.team.Equals("blue", StringComparison.CurrentCultureIgnoreCase) &&
+                                !player.TeamName.Equals(teamA, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                player.TeamName = teamA;
+
+                                player = seasonPlayerReader.Update(player);
+                                seasonPlayerReader.Save();
+                            }
+                            else if (score.multiplayer.team.Equals("red", StringComparison.CurrentCultureIgnoreCase) &&
+                                    !player.TeamName.Equals(teamB, StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                player.TeamName = teamB;
+
+                                player = seasonPlayerReader.Update(player);
+                                seasonPlayerReader.Save();
+                            }
+
                         }
 
                         if (!osuIdsToUpdate.Contains(player.OsuUserId))
@@ -589,7 +689,7 @@ namespace GAFBot.Statistic
                             BeatmapId = game.beatmap.id ?? 0,
                             BotSeasonResultId = seasonResult.Id,
                             BotSeasonPlayerId = player.Id,
-                            TeamName = t.Name,
+                            TeamName = player.TeamName,
 
                             TeamVs = teamVs,
                             PlayOrder = i,
@@ -644,9 +744,9 @@ namespace GAFBot.Statistic
 
                     Dictionary<long, double> gpsValues = CalculateGPS(ref scores);
 
-                    long teamAId = -1;
+                    string teamAName = null;
+                    string teamBName = null;
                     long scoreAId = -1;
-                    long teamBId = -1;
                     long scoreBId = -1;
                     foreach (var gpsPair in gpsValues)
                     {
@@ -659,21 +759,21 @@ namespace GAFBot.Statistic
                         {
                             BotSeasonPlayer player = seasonPlayerReader.Get(p => p.Id == gpsPair.Key);
 
-                            if (teamAId == -1)
+                            if (teamAName == null)
                             {
-                                teamAId = player.TeamId;
+                                teamAName = player.TeamName;
                                 scoreAId = score.Id;
                             }
-                            else if (teamBId == -1 && teamAId != player.TeamId)
+                            else if (teamBName == null && teamAName != player.TeamName)
                             {
-                                teamBId = player.TeamId;
+                                teamBName = player.TeamName;
                                 scoreBId = score.Id;
                             }
                             else
                             {
-                                if (teamAId == player.TeamId && scores.FirstOrDefault(s => s.Id == scoreAId).GPS < score.GPS)
+                                if (teamAName == player.TeamName && scores.FirstOrDefault(s => s.Id == scoreAId).GPS < score.GPS)
                                     scoreAId = score.Id;
-                                else if (teamBId == player.TeamId && scores.FirstOrDefault(s => s.Id == scoreBId).GPS < score.GPS)
+                                else if (teamBName == player.TeamName && scores.FirstOrDefault(s => s.Id == scoreBId).GPS < score.GPS)
                                     scoreBId = score.Id;
                             }
                         }
@@ -712,26 +812,23 @@ namespace GAFBot.Statistic
                 foreach (long osuId in osuIdsToUpdate)
                     ForceRefreshCache(osuId, context);
 
-                Team blueTeam = GetTeam(blueTeamOsuUserId, context);
-                Team redTeam = GetTeam(redTeamOsuUserId, context);
-
                 if (teamBlueWins > teamRedWins)
                 {
                     seasonResult.WinningTeamColor = 0;
                     seasonResult.WinningTeamWins = teamBlueWins;
-                    seasonResult.WinningTeam = blueTeam.Name;
+                    seasonResult.WinningTeam = teamA;
 
                     seasonResult.LosingTeamWins = teamRedWins;
-                    seasonResult.LosingTeam = redTeam.Name;
+                    seasonResult.LosingTeam = teamB;
                 }
                 else
                 {
                     seasonResult.WinningTeamColor = 1;
                     seasonResult.WinningTeamWins = teamRedWins;
-                    seasonResult.WinningTeam = redTeam.Name;
+                    seasonResult.WinningTeam = teamB;
 
                     seasonResult.LosingTeamWins = teamBlueWins;
-                    seasonResult.LosingTeam = blueTeam.Name;
+                    seasonResult.LosingTeam = teamA;
                 }
 
                 seasonResultReader.Update(seasonResult);
@@ -889,10 +986,10 @@ namespace GAFBot.Statistic
 
                 if (sendToDatabase)
                 {
-                    using (BaseDBReader<BotAnalyzerBaninfo> banReader = new BaseDBReader<BotAnalyzerBaninfo>())
+                    using (BaseDBReader<BotSeasonBaninfo> banReader = new BaseDBReader<BotSeasonBaninfo>())
                     {
                         foreach (BanInfo bi in analyzerResult.Bans)
-                            banReader.Add(new BotAnalyzerBaninfo()
+                            banReader.Add(new BotSeasonBaninfo()
                             {
                                 MatchId = analyzerResult.MatchId,
                                 Artist = bi.Artist,
@@ -908,31 +1005,6 @@ namespace GAFBot.Statistic
             catch (Exception ex)
             {
                 Logger.Log(ex.ToString(), LogLevel.ERROR);
-            }
-        }
-
-        private static Team GetTeam(long osuUserId, GAFContext context = null)
-        {
-            bool dispose = context == null;
-
-            BaseDBReader<Player> playerReader = new BaseDBReader<Player>(context);
-            BaseDBReader<TeamPlayerList> tplReader = new BaseDBReader<TeamPlayerList>(context);
-            BaseDBReader<Team> teamReader = new BaseDBReader<Team>(context);
-
-            try
-            {
-                Player player = playerReader.Get(p => p.OsuId == osuUserId);
-
-                if (player == null)
-                    return null;
-
-                TeamPlayerList tpl = tplReader.Get(tp => tp.PlayerListId == player.Id);
-                return teamReader.Get(t => t.Id == tpl.TeamId);
-            }
-            finally
-            {
-                if (dispose)
-                    playerReader.Dispose();
             }
         }
 
@@ -1280,14 +1352,12 @@ namespace GAFBot.Statistic
 
             SeasonPlayerReader playerReader = new SeasonPlayerReader(context);
             SeasonPlayerCardCacheReader cardCacheReader = new SeasonPlayerCardCacheReader(context);
-            BaseDBReader<Team> teamReader = new BaseDBReader<Team>(context);
             BaseDBReader<BotSeasonScore> scoreReader = new BaseDBReader<BotSeasonScore>(context);
 
             try
             {
                 BotSeasonPlayer player = playerReader.Get(p => p.OsuUserId == osuUserId);
                 List<BotSeasonScore> scores = scoreReader.Where(s => s.BotSeasonPlayerId == player.Id);
-                Team team = teamReader.Get(t => t.Id == player.TeamId);
 
                 foreach (BotSeasonScore score in scores)
                 {
@@ -1310,11 +1380,7 @@ namespace GAFBot.Statistic
                 cardCache.OverallRating = GetOverallRating(player, context);
 
                 cardCache.LastUpdated = DateTime.UtcNow;
-
-                if (team == null)
-                    cardCache.TeamName = "not found";
-                else
-                    cardCache.TeamName = team.Name;
+                cardCache.TeamName = player.TeamName;
 
                 cardCache.Username = player.LastOsuUserName ?? "not found";
 

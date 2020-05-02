@@ -72,6 +72,17 @@ namespace GAFBot
                             }
                         });
                     }
+
+#if GAF
+                    if (level == LogLevel.ERROR ||
+                        level == LogLevel.WARNING)
+                    {
+                        if (Program.Client == null || Program.Client.CurrentUser == null)
+                            return;
+
+                        Coding.Discord.SendMessage(704620192394772490, toLog);
+                    }
+#endif
                 }
             }));
 

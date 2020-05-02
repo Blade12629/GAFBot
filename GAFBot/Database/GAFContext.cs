@@ -16,29 +16,25 @@ namespace GAFBot.Database
         {
         }
         
-        public virtual DbSet<BotBets> BotBets { get; set; }
         public virtual DbSet<BotConfig> BotConfig { get; set; }
         public virtual DbSet<BotLog> BotLog { get; set; }
         public virtual DbSet<BotMaintenance> BotMaintenance { get; set; }
         public virtual DbSet<BotUsers> BotUsers { get; set; }
         public virtual DbSet<BotVerifications> BotVerifications { get; set; }
-        public virtual DbSet<BotAnalyzerResult> BotAnalyzerResult { get; set; }
-        public virtual DbSet<BotAnalyzerRank> BotAnalyzerRank { get; set; }
-        public virtual DbSet<BotAnalyzerBaninfo> BotAnalyzerBanInfo { get; set; }
-        public virtual DbSet<BotAnalyzerScore> BotAnalyzerScore { get; set; }
-        public virtual DbSet<BotAnalyzerTourneyMatches> BotAnalyzerTourneyMatch { get; set; }
+        public virtual DbSet<BotSeasonBaninfo> BotSeasonBanInfo { get; set; }
         public virtual DbSet<BotBirthday> BotBirthday { get; set; }
         public virtual DbSet<BotLocalization> BotLocalization { get; set; }
         public virtual DbSet<BotCountryCode> BotCountryCode { get; set; }
+
+#if GAF
         public virtual DbSet<TeamPlayerList> TeamPlayerList { get; set; }
         public virtual DbSet<Team> Team { get; set; }
         public virtual DbSet<Player> Player { get; set; }
+#endif
+
         public virtual DbSet<BotPick> BotPick { get; set; }
         public virtual DbSet<BotApiKey> BotApiKey { get; set; }
         public virtual DbSet<BotApiRegisterCode> BotApiRegisterCode { get; set; }
-        public virtual DbSet<BotAnalyzerQualifierResult> BotAnalyzerQualifierResult { get; set; }
-        public virtual DbSet<BotAnalyzerQualifierTeam> BotAnalyzerQualifierTeam { get; set; }
-        public virtual DbSet<BotAnalyzerQualifierPlayer> BotAnalyzerQualifierPlayer { get; set; }
         public virtual DbSet<Beatmap> Beatmap { get; set; }
         public virtual DbSet<BeatmapMod> BeatmapMod { get; set; }
         public virtual DbSet<BotSeasonPlayer> BotSeasonPlayer { get; set; }
@@ -115,9 +111,9 @@ namespace GAFBot.Database
                     .HasColumnName("last_osu_user_name")
                     .HasColumnType("text");
 
-                entity.Property(e => e.TeamId)
-                    .HasColumnName("team_id")
-                    .HasColumnType("bigint(20)");
+                entity.Property(e => e.TeamName)
+                    .HasColumnName("team_name")
+                    .HasColumnType("text");
             });
 
             modelBuilder.Entity<BotSeasonResult>(entity =>
@@ -357,23 +353,6 @@ namespace GAFBot.Database
                     .HasColumnType("datetime");
             });
 
-            modelBuilder.Entity<BotAnalyzerTourneyMatches>(entity =>
-            {
-                entity.ToTable("bot_analyzer_tourney_matches");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Season)
-                    .HasColumnName("season")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.MatchId)
-                    .HasColumnName("match_id")
-                    .HasColumnType("bigint(20)");
-            });
-
             modelBuilder.Entity<BeatmapMod>(entity =>
             {
                 entity.ToTable("beatmap_mod");
@@ -401,65 +380,6 @@ namespace GAFBot.Database
 
                 entity.Property(e => e.Country)
                     .HasColumnName("country")
-                    .HasColumnType("text");
-            });
-
-            modelBuilder.Entity<BotAnalyzerQualifierResult>(entity =>
-            {
-                entity.ToTable("bot_analyzer_qualifier_result");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.MatchId)
-                    .HasColumnName("match_id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Stage)
-                    .HasColumnName("stage")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.MatchName)
-                    .HasColumnName("match_name")
-                    .HasColumnType("text");
-            });
-
-            modelBuilder.Entity<BotAnalyzerQualifierTeam>(entity =>
-            {
-                entity.ToTable("bot_analyzer_qualifier_team");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.QualifierResultId)
-                    .HasColumnName("qualifier_result_id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.TeamName)
-                    .HasColumnName("team_name")
-                    .HasColumnType("text");
-            });
-
-            modelBuilder.Entity<BotAnalyzerQualifierPlayer>(entity =>
-            {
-                entity.ToTable("bot_analyzer_qualifier_player");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.QualifierTeamId)
-                    .HasColumnName("qualifier_team_id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.UserId)
-                    .HasColumnName("user_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.UserName)
-                    .HasColumnName("user_name")
                     .HasColumnType("text");
             });
 
@@ -568,6 +488,7 @@ namespace GAFBot.Database
                     .HasColumnType("text");
             });
 
+#if GAF
             modelBuilder.Entity<Player>(entity =>
             {
                 entity.ToTable("player");
@@ -652,204 +573,9 @@ namespace GAFBot.Database
                     .HasColumnName("medianpp")
                     .HasColumnType("bigint(20)");
             });
+#endif
 
-            modelBuilder.Entity<BotAnalyzerScore>(entity =>
-            {
-                entity.ToTable("bot_analyzer_score");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-
-                entity.Property(e => e.UserId)
-                    .HasColumnName("user_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.MatchId)
-                    .HasColumnName("match_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.BeatmapId)
-                    .HasColumnName("beatmap_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.Accuracy)
-                    .HasColumnName("accuracy")
-                    .HasColumnType("float");
-
-                entity.Property(e => e.Mods)
-                    .HasColumnName("mods")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.Score)
-                    .HasColumnName("score")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.MaxCombo)
-                    .HasColumnName("max_combo")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Perfect)
-                    .HasColumnName("perfect")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.PP)
-                    .HasColumnName("pp")
-                    .HasColumnType("float");
-
-                entity.Property(e => e.Rank)
-                    .HasColumnName("rank")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnName("created_at")
-                    .HasColumnType("datetime");
-
-                entity.Property(e => e.Slot)
-                    .HasColumnName("slot")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Team)
-                    .HasColumnName("team")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.Pass)
-                    .HasColumnName("pass")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Count50)
-                    .HasColumnName("count_50")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Count100)
-                    .HasColumnName("count_100")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.Count300)
-                    .HasColumnName("count_300")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.CountGeki)
-                    .HasColumnName("count_geki")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.CountKatu)
-                    .HasColumnName("count_katu")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.CountMiss)
-                    .HasColumnName("count_miss")
-                    .HasColumnType("int(11)");
-            });
-
-            modelBuilder.Entity<BotAnalyzerResult>(entity =>
-            {
-                entity.ToTable("bot_analyzer_result");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.MatchId)
-                    .HasColumnName("match_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.Stage)
-                    .HasColumnName("stage")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.MatchName)
-                    .HasColumnName("match_name")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.WinningTeam)
-                    .HasColumnName("winning_team")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.WinningTeamWins)
-                    .HasColumnName("winning_team_wins")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.WinningTeamColor)
-                    .HasColumnName("winning_team_color")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.LosingTeam)
-                    .HasColumnName("losing_team")
-                    .HasColumnType("text");
-
-                entity.Property(e => e.LosingTeamWins)
-                    .HasColumnName("losing_team_wins")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.TimeStamp)
-                    .HasColumnName("time_stamp")
-                    .HasColumnType("datetime");
-
-                entity.Property(e => e.HighestScoreBeatmapId)
-                    .HasColumnName("highest_score_beatmap_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.HighestScoreOsuId)
-                    .HasColumnName("highest_score_osu_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.HighestScoreId)
-                    .HasColumnName("highest_score_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.HighestAccuracyBeatmapId)
-                    .HasColumnName("highest_accuracy_beatmap_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.HighestAccuracyOsuId)
-                    .HasColumnName("highest_accuracy_osu_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.HighestAccuracyScoreId)
-                    .HasColumnName("highest_accuracy_score_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.MvpUserOsuId)
-                    .HasColumnName("mvp_user_osu_id")
-                    .HasColumnType("bigint(20)");
-            });
-
-            modelBuilder.Entity<BotAnalyzerRank>(entity =>
-            {
-                entity.ToTable("bot_analyzer_rank");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.MatchId)
-                    .HasColumnName("match_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.PlayerOsuId)
-                    .HasColumnName("player_osu_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.Place)
-                    .HasColumnName("place")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.PlaceAccuracy)
-                    .HasColumnName("place_accuracy")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.PlaceScore)
-                    .HasColumnName("place_score")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.MvpScore)
-                    .HasColumnName("mvp_score")
-                    .HasColumnType("float");
-            });
-
-            modelBuilder.Entity<BotAnalyzerBaninfo>(entity =>
+            modelBuilder.Entity<BotSeasonBaninfo>(entity =>
             {
                 entity.ToTable("bot_analyzer_baninfo");
 
@@ -880,28 +606,6 @@ namespace GAFBot.Database
                     .IsRequired()
                     .HasColumnName("banned_by")
                     .HasColumnType("text");
-            });
-
-            modelBuilder.Entity<BotBets>(entity =>
-            {
-                entity.ToTable("bot_bets");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.DiscordUserId)
-                    .HasColumnName("discord_user_id")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.Matchid)
-                    .HasColumnName("matchid")
-                    .HasColumnType("bigint(20)");
-
-                entity.Property(e => e.Team)
-                    .IsRequired()
-                    .HasColumnName("team")
-                    .HasColumnType("longtext");
             });
 
             modelBuilder.Entity<BotConfig>(entity =>
@@ -1068,8 +772,16 @@ namespace GAFBot.Database
                     .HasColumnName("osu_username")
                     .HasColumnType("varchar(255)");
 
+                entity.Property(e => e.OsuUserId)
+                    .HasColumnName("osu_user_id")
+                    .HasColumnType("bigint(20)");
+
                 entity.Property(e => e.Points)
                     .HasColumnName("points")
+                    .HasColumnType("bigint(20)");
+
+                entity.Property(e => e.PointsPickEm)
+                    .HasColumnName("points_pick_em")
                     .HasColumnType("bigint(20)");
 
                 entity.Property(e => e.RegisteredOn).HasColumnName("registered_on");

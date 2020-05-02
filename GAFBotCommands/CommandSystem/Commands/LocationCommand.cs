@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if GAF
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -107,3 +108,4 @@ namespace GAFBot.Commands
         }
     }
 }
+#endif

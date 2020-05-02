@@ -307,7 +307,6 @@ namespace MessageModule
             }
         }
 
-
         public void OnMemberRemoved(GuildMemberRemoveEventArgs args)
         {
         }
@@ -360,23 +359,7 @@ namespace MessageModule
                         string[] lineSplit = messageArgs.Message.Content.Split(new char[] { '\r', '\n' });
                         lineSplit[0] = lineSplit[0].Replace("dq!", "");
 
-                        string[] wSplit;
-                        foreach (string line in lineSplit)
-                        {
-                            if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
-                            {
-                                wSplit = line.Split('-');
-                                string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
-
-                                if (stage.Equals("qualifier", StringComparison.CurrentCultureIgnoreCase))
-                                    StartQualifierAnalyzer(messageArgs);
-                                else
-                                    StartAnalyzer(messageArgs);
-
-                                break;
-                            }
-                        }
-
+                        StartAnalyzer(messageArgs);
                         return;
                     }
 
@@ -390,6 +373,9 @@ namespace MessageModule
                         Coding.Discord.SendMessage(messageArgs.Channel.Id, "https://media.tenor.com/images/bebeb96736fc75a7e1b0bb1a1e9b0359/tenor.gif");
                         return;
                     }
+
+                    if (string.IsNullOrEmpty(message))
+                        return;
 
                     if (!char.IsLetterOrDigit(message[0]))
                         Task.Run(() => Program.CommandHandler.ActivateCommand(messageArgs.Message, (AccessLevel)buser.AccessLevel));
@@ -493,8 +479,9 @@ namespace MessageModule
                 AccessLevel = 0,
                 IsVerified = autoVerify,
                 Points = 0,
+                PointsPickEm = 0,
                 RegisteredOn = DateTime.UtcNow,
-                OsuUsername = null
+                OsuUsername = ""
             };
 
             using (GAFContext context = new GAFContext())
@@ -504,122 +491,6 @@ namespace MessageModule
             }
 
             Logger.Log("MessageHandler: User registered", LogLevel.Trace);
-        }
-
-        public void StartQualifierAnalyzer(MessageCreateEventArgs args, bool sendToDatabase = true)
-        {
-            StartQualifierAnalyzer(args.Message.Content, args.Channel.Id, sendToDatabase);
-        }
-
-        /// <summary>
-        /// starts the osu mp qualifier analyzer
-        /// </summary>
-        public void StartQualifierAnalyzer(string message, ulong channel, bool sendToDatabase = true)
-        {
-            Task.Run(() =>
-            {
-                try
-                {
-                    Logger.Log("Starting qualifier analyzer", LogLevel.Trace);
-
-                    //<https://osu.ppy.sh/community/matches/53616778> 
-                    //<https://osu.ppy.sh/mp/53616778> 
-
-                    GAFBot.Osu.Analyzer analyzer = new GAFBot.Osu.Analyzer();
-                    var matchData = analyzer.ParseMatch(message);
-
-                    AnalyzerQualifierResult result = analyzer.CreateQualifierStatistics(matchData.Item1, matchData.Item2);
-
-                    string[] lineSplit = message.Split(new char[] { '\r', '\n' });
-                    lineSplit[0] = lineSplit[0].Replace("dq!", "");
-
-                    string[] wSplit;
-                    foreach (string line in lineSplit)
-                    {
-                        if (line.StartsWith("stage", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            wSplit = line.Split('-');
-                            string stage = wSplit[1].TrimStart(' ').TrimEnd(' ');
-                            result.Stage = stage;
-
-                            break;
-                        }
-                    }
-
-                    DiscordColor statsColor = _analyzerColors[Program.Rnd.Next(0, _analyzerColors.Count - 1)];
-                    DiscordEmbed statsEmbed = analyzer.CreateQualifierStatisticEmbed(result, statsColor);
-
-                    Logger.Log("Finished analyzing qualifier stats, sending result...", LogLevel.Trace);
-
-                    Coding.Discord.GetChannel(channel).SendMessageAsync(embed: statsEmbed).Wait();
-
-                    if (sendToDatabase)
-                    {
-                        using (GAFContext context = new GAFContext())
-                        {
-                            var resultEntry = context.BotAnalyzerQualifierResult.Add(new BotAnalyzerQualifierResult()
-                            {
-                                MatchId = result.MatchId,
-                                MatchName = result.MatchName,
-                                Stage = result.Stage
-                            });
-
-                            context.SaveChanges();
-
-                            foreach (var team in result.Teams)
-                            {
-                                BotAnalyzerQualifierTeam dbteam = context.BotAnalyzerQualifierTeam.FirstOrDefault(t => t.TeamName.Equals(team.TeamName, StringComparison.CurrentCultureIgnoreCase));
-
-                                if (dbteam == null)
-                                {
-                                    var teamEntry = context.BotAnalyzerQualifierTeam.Add(new BotAnalyzerQualifierTeam()
-                                    {
-                                        QualifierResultId = resultEntry.Entity.Id,
-                                        TeamName = team.TeamName
-                                    });
-
-                                    context.SaveChanges();
-                                    dbteam = teamEntry.Entity;
-                                }
-
-                                foreach (var player in team.Players)
-                                {
-                                    BotAnalyzerQualifierPlayer dbplayer = context.BotAnalyzerQualifierPlayer.FirstOrDefault(p => p.UserId == player.UserId);
-
-                                    if (dbplayer == null)
-                                    {
-                                        var playerEntry = context.BotAnalyzerQualifierPlayer.Add(new BotAnalyzerQualifierPlayer()
-                                        {
-                                            QualifierTeamId = dbteam.Id,
-                                            UserId = player.UserId,
-                                            UserName = player.UserName
-                                        });
-
-                                        context.SaveChanges();
-                                        dbplayer = playerEntry.Entity;
-                                    }
-
-                                    foreach (var scorepair in player.Scores)
-                                    {
-                                        var dbscore = ConvertScore(scorepair.Item2, result.MatchId);
-                                        dbscore.BeatmapId = scorepair.Item1;
-
-                                        context.BotAnalyzerScore.Add(dbscore);
-                                    }
-                                }
-                            }
-
-                            context.SaveChanges();
-
-                            Logger.Log("Saved qualifier result to db", LogLevel.Trace);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log(ex.ToString(), LogLevel.ERROR);
-                }
-            });
         }
 
         public void StartAnalyzer(MessageCreateEventArgs args, bool sendToApi = false, bool sendToDatabase = true)
@@ -742,7 +613,7 @@ namespace MessageModule
                         using (GAFContext context = new GAFContext())
                         {
                             foreach (BanInfo bi in analyzerResult.Bans)
-                                context.BotAnalyzerBanInfo.Add(new BotAnalyzerBaninfo()
+                                context.BotSeasonBanInfo.Add(new BotSeasonBaninfo()
                                 {
                                     MatchId = analyzerResult.MatchId,
                                     Artist = bi.Artist,
@@ -764,41 +635,6 @@ namespace MessageModule
             });
         }
 
-        public BotAnalyzerScore ConvertScore(OsuHistoryEndPoint.HistoryJson.Score score, int matchId)
-        {
-            string mods = "";
-
-            if (score.mods != null && score.mods.Count > 0)
-            {
-                mods = score.mods[0];
-
-                for (int i = 1; i < score.mods.Count; i++)
-                    mods += "|" + score.mods[i];
-            }
-
-            return new BotAnalyzerScore()
-            {
-                MatchId = matchId,
-                UserId = score.user_id ?? 0,
-                Accuracy = score.accuracy ?? 0,
-                Mods = mods,
-                Score = score.score ?? 0,
-                MaxCombo = score.max_combo ?? 0,
-                Perfect = score.perfect ?? 0,
-                PP = score.pp ?? 0,
-                Rank = score.rank ?? 0,
-                CreatedAt = score.created_at ?? DateTime.UtcNow,
-                Slot = score.multiplayer.slot ?? 0,
-                Team = score.multiplayer.team,
-                Pass = score.multiplayer.pass ?? 0,
-                Count50 = score.statistics.count_50 ?? 0,
-                Count100 = score.statistics.count_100 ?? 0,
-                Count300 = score.statistics.count_300 ?? 0,
-                CountGeki = score.statistics.count_geki ?? 0,
-                CountKatu = score.statistics.count_katu ?? 0,
-                CountMiss = score.statistics.count_miss ?? 0
-            };
-        }
 
         public void WelcomeMessage(ulong channel, string welcomeMessage, string mentionString)
         {

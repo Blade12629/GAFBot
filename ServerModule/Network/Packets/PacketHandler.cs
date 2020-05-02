@@ -29,6 +29,7 @@ namespace ServerModule.Network.Packets
 
             _packets = new Dictionary<byte, IPacket>();
             RegisterDefaultPackets();
+            _initialized = true;
         }
 
         public static void RegisterDefaultPackets()

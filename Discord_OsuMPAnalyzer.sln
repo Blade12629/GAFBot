@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27428.2037
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GAFBot", "GAFBot\GAFBot.csproj", "{21FBE652-D1DE-411B-8BE7-C323C2FDE30C}"
 EndProject
@@ -22,7 +22,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GAFStreamTool", "GAFStreamT
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerModule", "ServerModule\ServerModule.csproj", "{8C8F6B28-C957-4929-A3CA-D7566142EB92}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptingModule", "ScriptingModule\ScriptingModule.csproj", "{A42D07A2-DF35-46A3-A719-A4E306CE2359}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptingModule", "ScriptingModule\ScriptingModule.csproj", "{A42D07A2-DF35-46A3-A719-A4E306CE2359}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

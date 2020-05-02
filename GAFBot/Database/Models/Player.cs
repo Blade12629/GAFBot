@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if GAF
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -18,3 +19,4 @@ namespace GAFBot.Database.Models
         public string Country { get; set; }
     }
 }
+#endif

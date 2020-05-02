@@ -453,6 +453,7 @@ namespace VerificationModule
 
                 buser.IsVerified = true;
                 buser.OsuUsername = osuUser;
+                buser.OsuUserId = userJson.user_id;
 
                 context.BotUsers.Update(buser);
                 context.SaveChanges();

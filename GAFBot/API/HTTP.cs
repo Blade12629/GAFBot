@@ -81,6 +81,9 @@ namespace GAFBot.API
         {
             const string route = "/api/dev/json";
 
+            if (_token == null || !_token.IsValid)
+                return false;
+
             SendTest testS = new SendTest(message);
             string json = JsonConvert.SerializeObject(testS);
             string response = await Post(json, route);

@@ -1,4 +1,5 @@
-﻿using GAFBot;
+﻿#if GAF
+using GAFBot;
 using GAFBot.Database;
 using GAFBot.Database.Models;
 using GAFBot.MessageSystem;
@@ -167,3 +168,4 @@ namespace GAFBot.Commands
         }
     }
 }
+#endif

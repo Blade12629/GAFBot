@@ -9,7 +9,9 @@ namespace GAFBot.Database.Models
         public short? AccessLevel { get; set; }
         public long? DiscordId { get; set; }
         public string OsuUsername { get; set; }
+        public long OsuUserId { get; set; }
         public long? Points { get; set; }
+        public long? PointsPickEm { get; set; }
         public DateTime? RegisteredOn { get; set; }
         public bool IsVerified { get; set; }
     }

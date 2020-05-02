@@ -13,13 +13,13 @@ namespace GAFBot.Database.Readers
             
         }
 
-        public BotSeasonPlayer Add(string osuUsername, long osuUserId, long teamId)
+        public BotSeasonPlayer Add(string osuUsername, long osuUserId, string teamName)
         {
             return base.Add(new BotSeasonPlayer()
             {
                 LastOsuUserName = osuUsername,
                 OsuUserId = osuUserId,
-                TeamId = teamId
+                TeamName = teamName
             });
         }
 

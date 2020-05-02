@@ -1,0 +1,2 @@
+﻿dotnet gafbot.dll
+pause

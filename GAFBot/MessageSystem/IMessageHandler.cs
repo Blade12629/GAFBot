@@ -15,9 +15,7 @@ namespace GAFBot.MessageSystem
         AccessLevel GetAccessLevel(ulong user);
         void FakeTrigger(string teama, string teamb, string winningteam);
         void StartAnalyzer(MessageCreateEventArgs args, bool sendToApi = true, bool sendToDatabase = true);
-        void StartQualifierAnalyzer(MessageCreateEventArgs args, bool sendToDatabase = true);
-        void StartAnalyzer(string message, ulong channel, bool sendToApi = true, bool sendToDatabase = true);
-        void StartQualifierAnalyzer(string message, ulong channel, bool sendToDatabase = true);
+        void StartAnalyzer(string message, ulong channel, bool sendToApi = true, bool sendToDatabase = false);
         void Register(DiscordUser duser, ulong guildId = 0);
         void OnUserJoinedGuild(GuildMemberAddEventArgs args);
     }

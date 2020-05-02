@@ -10,6 +10,6 @@ namespace GAFBot.Database.Models
 
         public long OsuUserId { get; set; }
         public string LastOsuUserName { get; set; }
-        public long TeamId { get; set; }
+        public string TeamName { get; set; }
     }
 }
